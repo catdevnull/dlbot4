@@ -76,13 +76,6 @@ func handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		res := tgbotapi.NewVideo(msg.Chat.ID, *lookup)
 		res.ReplyToMessageID = msg.MessageID
 
-		// if info, err := readInfoFile(&infoPath); err != nil {
-		// 	res.Caption = "Hubo un error consiguiendo el titulo de este video."
-		// 	log.Println("error reading info file", err)
-		// } else {
-		// 	res.Caption = info.Title
-		// }
-
 		bot.Send(res)
 	}
 	if !hasDownloadables && explicit {
