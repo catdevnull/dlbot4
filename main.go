@@ -54,14 +54,14 @@ func handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			if explicit {
 				bot.Send(respondWithMany(msg, "No se pudo detectar la URL ", urlString, "."))
 			}
-			return
+			continue
 		}
 
 		if url.Hostname() != "vm.tiktok.com" {
 			if explicit {
 				bot.Send(respondWithMany(msg, "La URL ", urlString, " no es de TikTok."))
 			}
-			return
+			continue
 		}
 		hasDownloadables = true
 
@@ -69,7 +69,7 @@ func handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		lookup, err := Lookup(urlString)
 		if err != nil {
 			bot.Send(respondWithMany(msg, "Hubo un error al descargar ", urlString, "."))
-			return
+			continue
 		}
 		log.Println(lookup)
 
