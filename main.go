@@ -40,12 +40,7 @@ func handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		searchMsg = msg.ReplyToMessage
 	}
 
-	if searchMsg.Entities == nil || len(searchMsg.Entities) < 1 {
-		if explicit {
-			bot.Send(respondWith(msg, "Ese mensaje no tiene ningún link!"))
-		}
-		return
-	}
+	hasDownloadables := false
 
 	for i := 0; i < len(searchMsg.Entities); i++ {
 		e := searchMsg.Entities[i]
@@ -68,6 +63,7 @@ func handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			}
 			return
 		}
+		hasDownloadables = true
 
 		log.Printf("Downloading %s", urlString)
 		lookup, err := Lookup(urlString)
@@ -88,6 +84,9 @@ func handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		// }
 
 		bot.Send(res)
+	}
+	if !hasDownloadables && explicit {
+		bot.Send(respondWithMany(msg, "No encontré URLs descargables en ese mensaje."))
 	}
 }
 
