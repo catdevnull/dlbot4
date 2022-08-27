@@ -16,6 +16,7 @@ func respondWith(msg *tgbotapi.Message, str string) tgbotapi.MessageConfig {
 	res := tgbotapi.NewMessage(msg.Chat.ID, str)
 	res.ReplyToMessageID = msg.MessageID
 	res.DisableWebPagePreview = true
+	res.ParseMode = "markdown"
 	return res
 }
 
@@ -72,6 +73,14 @@ func handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			continue
 		}
 		log.Println(lookup)
+		if !lookup.Success {
+			if len(lookup.Message) > 0 {
+				bot.Send(respondWithMany(msg, "Hubo un error al descargar ", urlString, ": `", lookup.Message, "`"))
+			} else {
+				bot.Send(respondWithMany(msg, "Hubo un error al descargar ", urlString, "."))
+			}
+			continue
+		}
 
 		res := tgbotapi.NewVideo(msg.Chat.ID, *lookup)
 		res.ReplyToMessageID = msg.MessageID

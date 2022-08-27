@@ -18,6 +18,7 @@ type LookupResponse struct {
 	LikeCount    int    `json:"like_count"`
 	ShareCount   int    `json:"share_count"`
 	Success      bool   `json:"success"`
+	Message      string `json:"message"`
 	Token        string `json:"token"`
 }
 
