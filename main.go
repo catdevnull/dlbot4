@@ -58,16 +58,18 @@ func handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			continue
 		}
 
-		if url.Hostname() != "vm.tiktok.com" {
+		if url.Hostname() != "vm.tiktok.com" && url.Hostname() != "tiktok.com" {
 			if explicit {
 				bot.Send(respondWithMany(msg, "La URL ", urlString, " no es de TikTok."))
 			}
 			continue
 		}
 		hasDownloadables = true
+		// tikmate no entiende tiktok.com
+		url.Host = "vm.tiktok.com"
 
 		log.Printf("Downloading %s", urlString)
-		lookup, err := Lookup(urlString)
+		lookup, err := Lookup(url.String())
 		if err != nil {
 			bot.Send(respondWithMany(msg, "Hubo un error al descargar ", urlString, "."))
 			continue
