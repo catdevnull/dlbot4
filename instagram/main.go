@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/url"
+	"strings"
 
 	"nulo.in/dlbot/common"
 
@@ -11,6 +12,9 @@ import (
 
 func respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.Result {
 	if url.Hostname() != "instagram.com" && url.Hostname() != "www.instagram.com" {
+		return common.NotValid
+	}
+	if strings.Index(url.Path, "/reel/") != 0 {
 		return common.NotValid
 	}
 
