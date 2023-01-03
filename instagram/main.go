@@ -21,6 +21,7 @@ func respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.
 	log.Printf("Downloading %s", url.String())
 	lookup, err := Lookup(url.String())
 	if err != nil {
+		log.Println(err)
 		return common.HadError
 	}
 	log.Println(lookup)
