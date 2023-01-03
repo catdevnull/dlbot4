@@ -21,7 +21,7 @@ type QueryResponse struct {
 			EdgeMediaToCaption struct {
 				Edges []struct {
 					Node struct {
-						Text string `json:"text`
+						Text string `json:"text"`
 					} `json:"node"`
 				} `json:"edges"`
 			} `json:"edge_media_to_caption"`
