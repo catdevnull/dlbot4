@@ -24,14 +24,12 @@ func respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.
 	log.Printf("Downloading %s", urlString)
 	lookup, err := Lookup(url.String())
 	if err != nil {
+		log.Println(err)
 		return common.HadError
 	}
 	log.Println(lookup)
-	if !lookup.Success {
-		return common.HadError
-	}
 
-	res := tgbotapi.NewVideo(update.Message.Chat.ID, *lookup)
+	res := tgbotapi.NewVideo(update.Message.Chat.ID, tgbotapi.FileURL(lookup))
 	res.ReplyToMessageID = update.Message.MessageID
 	bot.Send(res)
 	return common.Uploaded
