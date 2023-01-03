@@ -1,4 +1,4 @@
-module nulo.in/dlbot/v4
+module nulo.in/dlbot/tiktok/v4
 
 go 1.18
 
