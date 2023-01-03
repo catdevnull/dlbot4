@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 )
@@ -22,35 +22,24 @@ type LookupResponse struct {
 	Token        string `json:"token"`
 }
 
-func (lookup LookupResponse) NeedsUpload() bool { return true }
-func (lookup LookupResponse) UploadData() (string, io.Reader, error) {
-	resp, err := http.Get("https://tikmate.app/download/" + lookup.Token + "/" + lookup.ID + ".mp4?hd=1")
-	if err != nil {
-		return "", nil, err
-	}
-	return lookup.AuthorName, resp.Body, nil
-
-}
-func (lookup LookupResponse) SendData() string {
-	log.Panicln("SendData called")
-	return ""
-}
-
-func Lookup(urlS string) (*LookupResponse, error) {
+func Lookup(urlS string) (string, error) {
 	resp, err := http.PostForm(
 		"https://api.tikmate.app/api/lookup",
 		url.Values{"url": {urlS}},
 	)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 
-	var response LookupResponse
-	err = json.Unmarshal(body, &response)
+	var lookup LookupResponse
+	err = json.Unmarshal(body, &lookup)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return &response, nil
+	if !lookup.Success {
+		return "", errors.New(lookup.Message)
+	}
+	return "https://tikmate.app/download/" + lookup.Token + "/" + lookup.ID + ".mp4?hd=1", nil
 }
