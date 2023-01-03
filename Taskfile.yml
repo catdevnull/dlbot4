@@ -22,3 +22,6 @@ tasks:
       - task: upload
         vars:
           WHICH: tiktok
+      - task: upload
+        vars:
+          WHICH: instagram
