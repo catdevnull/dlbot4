@@ -28,7 +28,7 @@ func respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.
 
 	res := tgbotapi.NewVideo(update.Message.Chat.ID, tgbotapi.FileURL(lookup.VideoUrl))
 	res.ReplyToMessageID = update.Message.MessageID
-	res.Caption = "@" + lookup.Author + ": " + lookup.Text
+	res.Caption = "@" + lookup.Author
 	bot.Send(res)
 	return common.Uploaded
 }
