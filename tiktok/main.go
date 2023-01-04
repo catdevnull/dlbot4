@@ -2,6 +2,7 @@ package tiktok
 
 import (
 	"log"
+	"net/http"
 	"net/url"
 
 	"nulo.in/dlbot/common"
@@ -12,7 +13,13 @@ import (
 // Gracias a https://github.com/Xenzi-XN1/Tiktok-Download
 // por enseñarme tikmate.app
 
-func Respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.Result {
+type TikTok struct {
+	http.Client
+}
+
+var Responder *TikTok = &TikTok{}
+
+func (r *TikTok) Respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.Result {
 	if url.Hostname() != "vm.tiktok.com" && url.Hostname() != "tiktok.com" {
 		return common.NotValid
 	}
@@ -22,7 +29,7 @@ func Respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.
 	url.Host = "vm.tiktok.com"
 
 	log.Printf("Downloading %s", urlString)
-	lookup, err := lookup(urlString)
+	lookup, err := r.lookup(urlString)
 	if err != nil {
 		log.Println(err)
 		return common.HadError

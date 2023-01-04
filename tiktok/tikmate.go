@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"net/http"
 	"net/url"
 )
 
@@ -22,8 +21,8 @@ type lookupResponse struct {
 	Token        string `json:"token"`
 }
 
-func lookup(urlS string) (string, error) {
-	resp, err := http.PostForm(
+func (r *TikTok) lookup(urlS string) (string, error) {
+	resp, err := r.Client.PostForm(
 		"https://api.tikmate.app/api/lookup",
 		url.Values{"url": {urlS}},
 	)

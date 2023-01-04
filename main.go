@@ -12,9 +12,8 @@ import (
 	"nulo.in/dlbot/tiktok"
 )
 
-type Responder func(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.Result
 type Config struct {
-	Responders []Responder
+	Responders []common.Responder
 }
 
 func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
@@ -48,8 +47,8 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 		}
 
 		var result common.Result
-		for _, respond := range config.Responders {
-			result = respond(bot, update, url)
+		for _, responder := range config.Responders {
+			result = responder.Respond(bot, update, url)
 			if result != common.NotValid {
 				break
 			}
@@ -76,9 +75,9 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 
 func main() {
 	config := Config{
-		Responders: []Responder{
-			instagram.Respond,
-			tiktok.Respond,
+		Responders: []common.Responder{
+			instagram.Responder,
+			tiktok.Responder,
 		},
 	}
 

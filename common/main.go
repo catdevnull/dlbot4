@@ -1,12 +1,16 @@
 package common
 
 import (
+	"net/url"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Result uint8
+type Responder interface {
+	Respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) Result
+}
 
 const (
 	NotValid Result = iota

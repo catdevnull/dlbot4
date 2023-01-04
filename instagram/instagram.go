@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"net/http"
 	"net/url"
 	"path"
 )
@@ -35,7 +34,7 @@ type lookupResponse struct {
 	Text     string
 }
 
-func lookup(urlSrc string) (lookupResponse, error) {
+func (r *Instagram) lookup(urlSrc string) (lookupResponse, error) {
 	urlSrcParsed, err := url.Parse(urlSrc)
 	if err != nil {
 		return lookupResponse{}, err
@@ -46,7 +45,7 @@ func lookup(urlSrc string) (lookupResponse, error) {
 	query.Add("variables", "{\"shortcode\":\""+path.Base(urlSrcParsed.Path)+"\",\"child_comment_count\":3,\"fetch_comment_count\":40,\"parent_comment_count\":24,\"has_threaded_comments\":true}")
 	url.RawQuery = query.Encode()
 
-	resp, err := http.Get(url.String())
+	resp, err := r.Client.Get(url.String())
 	if err != nil {
 		return lookupResponse{}, err
 	}
