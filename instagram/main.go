@@ -1,4 +1,4 @@
-package main
+package instagram
 
 import (
 	"log"
@@ -10,7 +10,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.Result {
+func Respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.Result {
 	if url.Hostname() != "instagram.com" && url.Hostname() != "www.instagram.com" {
 		return common.NotValid
 	}
@@ -19,7 +19,7 @@ func respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.
 	}
 
 	log.Printf("Downloading %s", url.String())
-	lookup, err := Lookup(url.String())
+	lookup, err := lookup(url.String())
 	if err != nil {
 		log.Println(err)
 		return common.HadError
@@ -31,8 +31,4 @@ func respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.
 	res.Caption = "@" + lookup.Author
 	bot.Send(res)
 	return common.Uploaded
-}
-
-func main() {
-	common.Main(common.Config{Respond: respond})
 }

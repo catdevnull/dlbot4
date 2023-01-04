@@ -1,7 +1,6 @@
-Esta repo tiene el código de distintos bots para Telegram que permiten descargar videos de distintos lugares.
+Un bot para Telegram que permite descargar videos de distintos lugares.
 
-- TikTok: [@dlthefourthbot](https://t.me/dlthefourthbot) (código: [[tiktok/]])
-- Instagram Reels: [@inst4gramdlbot](https://t.me/inst4gramdlbot) (código: [[instagram/]])
+[@dlthefourthbot](https://t.me/dlthefourthbot)
 
 Son rápidos ya que ni siquiera descargan el video, solo le pasan a Telegram la URL para descargarlos.
 
