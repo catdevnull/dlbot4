@@ -1,4 +1,4 @@
-package main
+package tiktok
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"net/url"
 )
 
-type LookupResponse struct {
+type lookupResponse struct {
 	AuthorAvatar string `json:"author_avatar"`
 	AuthorID     string `json:"author_id"`
 	AuthorName   string `json:"author_name"`
@@ -22,7 +22,7 @@ type LookupResponse struct {
 	Token        string `json:"token"`
 }
 
-func Lookup(urlS string) (string, error) {
+func lookup(urlS string) (string, error) {
 	resp, err := http.PostForm(
 		"https://api.tikmate.app/api/lookup",
 		url.Values{"url": {urlS}},
@@ -33,7 +33,7 @@ func Lookup(urlS string) (string, error) {
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 
-	var lookup LookupResponse
+	var lookup lookupResponse
 	err = json.Unmarshal(body, &lookup)
 	if err != nil {
 		return "", err

@@ -2,26 +2,12 @@ version: '3'
 
 tasks:
   build:
-    dir: "{{.WHICH}}"
-    label: "build-{{.WHICH}}"
     cmds:
       - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' .
   upload:
     deps:
       - task: build
-        vars:
-          WHICH: "{{.WHICH}}"
-    dir: "{{.WHICH}}"
-    label: "upload-{{.WHICH}}"
     cmds:
-      - ssh -p993 root@nulo.in sv stop dlbot-{{.WHICH}}
-      - scp -P993 {{.WHICH}} dlbot@nulo.in:/home/dlbot/bin/
-      - ssh -p993 root@nulo.in sv start dlbot-{{.WHICH}}
-  upload-all:
-    deps:
-      - task: upload
-        vars:
-          WHICH: tiktok
-      - task: upload
-        vars:
-          WHICH: instagram
+      - ssh -p993 root@nulo.in sv stop dlbot
+      - scp -P993 dlbot dlbot@nulo.in:/home/dlbot/bin/
+      - ssh -p993 root@nulo.in sv start dlbot

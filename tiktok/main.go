@@ -1,4 +1,4 @@
-package main
+package tiktok
 
 import (
 	"log"
@@ -12,7 +12,7 @@ import (
 // Gracias a https://github.com/Xenzi-XN1/Tiktok-Download
 // por enseñarme tikmate.app
 
-func respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.Result {
+func Respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.Result {
 	if url.Hostname() != "vm.tiktok.com" && url.Hostname() != "tiktok.com" {
 		return common.NotValid
 	}
@@ -22,7 +22,7 @@ func respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.
 	url.Host = "vm.tiktok.com"
 
 	log.Printf("Downloading %s", urlString)
-	lookup, err := Lookup(url.String())
+	lookup, err := lookup(urlString)
 	if err != nil {
 		log.Println(err)
 		return common.HadError
@@ -33,8 +33,4 @@ func respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.
 	res.ReplyToMessageID = update.Message.MessageID
 	bot.Send(res)
 	return common.Uploaded
-}
-
-func main() {
-	common.Main(common.Config{Respond: respond})
 }

@@ -1,4 +1,4 @@
-package main
+package instagram
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"path"
 )
 
-type QueryResponse struct {
+type queryResponse struct {
 	Data struct {
 		ShortcodeMedia *struct {
 			Type     string `json:"__typename"`
@@ -29,16 +29,16 @@ type QueryResponse struct {
 	} `json:"data"`
 }
 
-type Response struct {
+type lookupResponse struct {
 	VideoUrl string
 	Author   string
 	Text     string
 }
 
-func Lookup(urlSrc string) (Response, error) {
+func lookup(urlSrc string) (lookupResponse, error) {
 	urlSrcParsed, err := url.Parse(urlSrc)
 	if err != nil {
-		return Response{}, err
+		return lookupResponse{}, err
 	}
 
 	url, _ := url.Parse("https://www.instagram.com/graphql/query/?query_hash=b3055c01b4b222b8a47dc12b090e4e64")
@@ -48,23 +48,23 @@ func Lookup(urlSrc string) (Response, error) {
 
 	resp, err := http.Get(url.String())
 	if err != nil {
-		return Response{}, err
+		return lookupResponse{}, err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 
-	var response QueryResponse
+	var response queryResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return Response{}, err
+		return lookupResponse{}, err
 	}
 	if response.Data.ShortcodeMedia == nil {
-		return Response{}, errors.New("No encontré el video.")
+		return lookupResponse{}, errors.New("No encontré el video.")
 	}
 	if response.Data.ShortcodeMedia.Type != "GraphVideo" {
-		return Response{}, errors.New("Esto no es un video.")
+		return lookupResponse{}, errors.New("Esto no es un video.")
 	}
-	return Response{
+	return lookupResponse{
 		VideoUrl: response.Data.ShortcodeMedia.VideoUrl,
 		Author:   response.Data.ShortcodeMedia.Owner.Username,
 		Text:     response.Data.ShortcodeMedia.EdgeMediaToCaption.Edges[0].Node.Text,
