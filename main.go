@@ -41,35 +41,45 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 		url, err := url.Parse(urlString)
 		if err != nil {
 			if explicit {
-				bot.Send(common.RespondWithMany(msg, "No se pudo detectar la URL ", urlString, "."))
+				bot.Send(respondWithMany(msg, "No se pudo detectar la URL ", urlString, "."))
 			}
 			continue
 		}
 
-		var result common.Result
+		log.Printf("Downloading %s", url.String())
+
+		var uploadable *common.Uploadable
+		var érror common.Error
 		for _, responder := range config.Responders {
-			result = responder.Respond(bot, update, url)
-			if result != common.NotValid {
+			uploadable, érror = responder.Respond(url)
+			if érror != common.NotValid {
 				break
 			}
 		}
 
-		if explicit && result == common.NotValid {
-			bot.Send(common.RespondWithMany(msg, "La URL ", urlString, " no es compatible con este bot."))
+		if uploadable != nil {
+			res := tgbotapi.NewVideo(update.Message.Chat.ID, tgbotapi.FileURL(uploadable.Url))
+			res.ReplyToMessageID = update.Message.MessageID
+			res.Caption = uploadable.Caption
+			bot.Send(res)
+		}
+
+		if explicit && érror == common.NotValid {
+			bot.Send(respondWithMany(msg, "La URL ", urlString, " no es compatible con este bot."))
 			continue
 		}
 
-		if result == common.HadError || result == common.Uploaded {
+		if érror == common.HadError || érror == common.OK {
 			hasDownloadables = true
 		}
 
-		if result == common.HadError {
-			bot.Send(common.RespondWithMany(update.Message, "Hubo un error al descargar ", urlString, "."))
+		if érror == common.HadError {
+			bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", urlString, "."))
 			continue
 		}
 	}
 	if !hasDownloadables && explicit {
-		bot.Send(common.RespondWithMany(msg, "No encontré URLs descargables en ese mensaje."))
+		bot.Send(respondWithMany(msg, "No encontré URLs descargables en ese mensaje."))
 	}
 }
 
@@ -112,4 +122,20 @@ func main() {
 
 		go config.handleMessage(bot, update)
 	}
+}
+
+func respondWith(msg *tgbotapi.Message, str string) tgbotapi.MessageConfig {
+	res := tgbotapi.NewMessage(msg.Chat.ID, str)
+	res.ReplyToMessageID = msg.MessageID
+	res.DisableWebPagePreview = true
+	res.ParseMode = "markdown"
+	return res
+}
+
+func respondWithMany(msg *tgbotapi.Message, s ...string) tgbotapi.MessageConfig {
+	var res strings.Builder
+	for _, v := range s {
+		res.WriteString(v)
+	}
+	return respondWith(msg, res.String())
 }

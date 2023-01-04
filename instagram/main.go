@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"nulo.in/dlbot/common"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Instagram struct {
@@ -17,25 +15,22 @@ type Instagram struct {
 
 var Responder *Instagram = &Instagram{}
 
-func (r *Instagram) Respond(bot *tgbotapi.BotAPI, update tgbotapi.Update, url *url.URL) common.Result {
+func (r *Instagram) Respond(url *url.URL) (*common.Uploadable, common.Error) {
 	if url.Hostname() != "instagram.com" && url.Hostname() != "www.instagram.com" {
-		return common.NotValid
+		return nil, common.NotValid
 	}
 	if strings.Index(url.Path, "/reel/") != 0 {
-		return common.NotValid
+		return nil, common.NotValid
 	}
 
-	log.Printf("Downloading %s", url.String())
 	lookup, err := r.lookup(url.String())
 	if err != nil {
 		log.Println(err)
-		return common.HadError
+		return nil, common.HadError
 	}
-	log.Println(lookup)
 
-	res := tgbotapi.NewVideo(update.Message.Chat.ID, tgbotapi.FileURL(lookup.VideoUrl))
-	res.ReplyToMessageID = update.Message.MessageID
-	res.Caption = "@" + lookup.Author
-	bot.Send(res)
-	return common.Uploaded
+	return &common.Uploadable{
+		Url:     lookup.VideoUrl,
+		Caption: "@" + lookup.Author,
+	}, common.OK
 }
