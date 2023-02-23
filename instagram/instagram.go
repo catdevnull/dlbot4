@@ -63,9 +63,13 @@ func (r *Instagram) lookup(urlSrc string) (lookupResponse, error) {
 	if response.Data.ShortcodeMedia.Type != "GraphVideo" {
 		return lookupResponse{}, errors.New("Esto no es un video.")
 	}
+	var text string
+	if len(response.Data.ShortcodeMedia.EdgeMediaToCaption.Edges) > 0 {
+		text = response.Data.ShortcodeMedia.EdgeMediaToCaption.Edges[0].Node.Text
+	}
 	return lookupResponse{
 		VideoUrl: response.Data.ShortcodeMedia.VideoUrl,
 		Author:   response.Data.ShortcodeMedia.Owner.Username,
-		Text:     response.Data.ShortcodeMedia.EdgeMediaToCaption.Edges[0].Node.Text,
+		Text:     text,
 	}, nil
 }
