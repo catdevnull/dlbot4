@@ -2,7 +2,7 @@ Un bot para Telegram que permite descargar videos de distintos lugares.
 
 [@dlthefourthbot](https://t.me/dlthefourthbot)
 
-Son rápidos ya que ni siquiera descargan el video, solo le pasan a Telegram la URL para descargarlos.
+Es rápido ya que ni siquiera descarga el video, solo le pasa a Telegram la URL para descargarlos.
 
 ## TikTok
 
