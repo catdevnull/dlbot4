@@ -5,6 +5,7 @@ pipeline:
     commands:
       - melange keygen
       - melange build melange.yml --arch x86_64 --signing-key melange.rsa
+    privileged: true
 
   image:
     image: cgr.dev/chainguard/apko:latest
