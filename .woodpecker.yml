@@ -1,0 +1,14 @@
+# https://gitea.treehouse.systems/ariadne/ariadne.space/src/branch/main/.woodpecker.yml
+pipeline:
+  package:
+    image: cgr.dev/chainguard/melange:latest
+    commands:
+      - melange keygen
+      - melange build melange.yml --arch x86_64 --signing-key melange.rsa
+
+  image:
+    image: cgr.dev/chainguard/apko:latest
+    commands:
+      - echo $REGISTRY_SECRET | apko login --username Nulo --password-stdin gitea.nulo.in
+      - apko publish --debug --arch x86_64 --keyring-append melange.rsa.pub apko.yaml gitea.nulo.in/Nulo/dlbot4:latest
+    secrets: [REGISTRY_SECRET]
