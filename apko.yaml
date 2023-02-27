@@ -3,7 +3,6 @@ contents:
     - https://dl-cdn.alpinelinux.org/alpine/v3.17/main
   packages:
     - alpine-baselayout-data
-    - ca-certificates
     - dlbot
 
 accounts:
