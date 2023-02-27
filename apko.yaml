@@ -1,7 +1,6 @@
 contents:
   repositories:
     - https://dl-cdn.alpinelinux.org/alpine/v3.17/main
-    - /work/packages
   packages:
     - alpine-baselayout-data
     - ca-certificates
