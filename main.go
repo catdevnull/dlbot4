@@ -1,7 +1,9 @@
 package main
 
 import (
+	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -14,6 +16,24 @@ import (
 
 type Config struct {
 	Responders []common.Responder
+}
+
+type FileURL string
+
+func (fu FileURL) NeedsUpload() bool {
+	return true
+}
+
+func (fu FileURL) UploadData() (string, io.Reader, error) {
+	res, err := http.Get(string(fu))
+	if err != nil {
+		return "", nil, err
+	}
+	return "url.mp4", res.Body, nil
+}
+
+func (fu FileURL) SendData() string {
+	panic("we")
 }
 
 func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
@@ -58,7 +78,7 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 		}
 
 		if uploadable != nil {
-			res := tgbotapi.NewVideo(update.Message.Chat.ID, tgbotapi.FileURL(uploadable.Url))
+			res := tgbotapi.NewVideo(update.Message.Chat.ID, FileURL(uploadable.Url))
 			res.ReplyToMessageID = update.Message.MessageID
 			res.Caption = uploadable.Caption
 			_, err := bot.Send(res)
