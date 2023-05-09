@@ -61,7 +61,10 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 			res := tgbotapi.NewVideo(update.Message.Chat.ID, tgbotapi.FileURL(uploadable.Url))
 			res.ReplyToMessageID = update.Message.MessageID
 			res.Caption = uploadable.Caption
-			bot.Send(res)
+			_, err := bot.Send(res)
+			if err != nil {
+				log.Println("Error subiendo", url.String(), err)
+			}
 		}
 
 		if explicit && érror == common.NotValid {
