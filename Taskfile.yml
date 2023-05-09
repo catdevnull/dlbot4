@@ -1,9 +1,9 @@
-version: '3'
+version: "3"
 
 tasks:
   build:
     cmds:
-      - CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' .
+      - go build -tags=netgo .
   upload:
     deps:
       - task: build
