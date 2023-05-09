@@ -4,8 +4,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
+	"unicode/utf16"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"nulo.in/dlbot/common"
@@ -52,14 +54,20 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 
 	for i := 0; i < len(searchMsg.Entities); i++ {
 		e := searchMsg.Entities[i]
-		if e.Type != "url" {
+		if !e.IsURL() {
 			continue
 		}
 
-		url, err := e.ParseURL()
+		// ugh https://github.com/go-telegram-bot-api/telegram-bot-api/issues/231
+		text := update.Message.Text
+		utfEncodedString := utf16.Encode([]rune(text))
+		runeString := utf16.Decode(utfEncodedString[e.Offset : e.Offset+e.Length])
+		text = string(runeString)
+
+		url, err := url.Parse(text)
 		if err != nil {
 			if explicit {
-				bot.Send(respondWithMany(msg, "No se pudo detectar la URL."))
+				bot.Send(respondWithMany(msg, "No se pudo detectar la URL %s.", text))
 			}
 			continue
 		}
