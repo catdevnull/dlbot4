@@ -4,7 +4,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 
@@ -57,11 +56,10 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 			continue
 		}
 
-		urlString := searchMsg.Text[e.Offset : e.Offset+e.Length]
-		url, err := url.Parse(urlString)
+		url, err := e.ParseURL()
 		if err != nil {
 			if explicit {
-				bot.Send(respondWithMany(msg, "No se pudo detectar la URL ", urlString, "."))
+				bot.Send(respondWithMany(msg, "No se pudo detectar la URL."))
 			}
 			continue
 		}
@@ -88,7 +86,7 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 		}
 
 		if explicit && érror == common.NotValid {
-			bot.Send(respondWithMany(msg, "La URL ", urlString, " no es compatible con este bot."))
+			bot.Send(respondWithMany(msg, "La URL ", url.String(), " no es compatible con este bot."))
 			continue
 		}
 
@@ -97,7 +95,7 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 		}
 
 		if érror == common.HadError {
-			bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", urlString, "."))
+			bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
 			continue
 		}
 	}
