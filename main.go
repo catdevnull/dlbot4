@@ -59,7 +59,7 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 		}
 
 		// ugh https://github.com/go-telegram-bot-api/telegram-bot-api/issues/231
-		text := update.Message.Text
+		text := searchMsg.Text
 		utfEncodedString := utf16.Encode([]rune(text))
 		runeString := utf16.Decode(utfEncodedString[e.Offset : e.Offset+e.Length])
 		text = string(runeString)
