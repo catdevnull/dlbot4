@@ -18,13 +18,15 @@ type TikTok struct {
 var Responder *TikTok = &TikTok{}
 
 func (r *TikTok) Respond(url *url.URL) (*common.Uploadable, common.Error) {
-	if url.Hostname() != "vm.tiktok.com" && url.Hostname() != "tiktok.com" {
+	if url.Hostname() != "vm.tiktok.com" &&
+		url.Hostname() != "tiktok.com" &&
+		url.Hostname() != "www.tiktok.com" {
 		return nil, common.NotValid
 	}
-	urlString := url.String()
-
 	// tikmate no entiende tiktok.com
 	url.Host = "vm.tiktok.com"
+
+	urlString := url.String()
 
 	lookup, err := r.lookup(urlString)
 	if err != nil {
