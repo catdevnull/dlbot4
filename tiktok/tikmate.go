@@ -7,6 +7,8 @@ import (
 	"net/url"
 )
 
+// alternativa: https://github.com/Evil0ctal/Douyin_TikTok_Download_API
+
 type lookupResponse struct {
 	AuthorAvatar string `json:"author_avatar"`
 	AuthorID     string `json:"author_id"`
