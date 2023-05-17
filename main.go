@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"unicode/utf16"
+	"errors"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"nulo.in/dlbot/common"
@@ -29,6 +30,9 @@ func (fu FileURL) UploadData() (string, io.Reader, error) {
 	res, err := http.Get(string(fu))
 	if err != nil {
 		return "", nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return "", nil, errors.New(res.Status)
 	}
 	return "url.mp4", res.Body, nil
 }
@@ -90,6 +94,7 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 			_, err := bot.Send(res)
 			if err != nil {
 				log.Println("Error subiendo", url.String(), err)
+				bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
 			}
 		}
 
