@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -8,7 +9,6 @@ import (
 	"os"
 	"strings"
 	"unicode/utf16"
-	"errors"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"nulo.in/dlbot/common"
