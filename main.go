@@ -44,6 +44,13 @@ func (fu FileURL) SendData() string {
 func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	var explicit bool
 
+	send := func(c tgbotapi.Chattable) {
+		_, err := bot.Send(c)
+		if err != nil {
+			log.Println("No pude enviar un mensaje porque", err)
+		}
+	}
+
 	msg := update.Message
 	if strings.HasPrefix(msg.Text, "/dl") || msg.Chat.IsPrivate() {
 		explicit = true
@@ -108,7 +115,7 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 		}
 
 		if érror == common.HadError {
-			bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
+			send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
 			continue
 		}
 	}
