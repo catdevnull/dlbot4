@@ -169,7 +169,6 @@ func respondWith(msg *tgbotapi.Message, str string) tgbotapi.MessageConfig {
 	res := tgbotapi.NewMessage(msg.Chat.ID, str)
 	res.ReplyToMessageID = msg.MessageID
 	res.DisableWebPagePreview = true
-	res.ParseMode = "markdown"
 	return res
 }
 
