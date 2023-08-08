@@ -19,7 +19,7 @@ func (r *Instagram) Respond(url *url.URL) (*common.Uploadable, common.Error) {
 	if url.Hostname() != "instagram.com" && url.Hostname() != "www.instagram.com" {
 		return nil, common.NotValid
 	}
-	if strings.Index(url.Path, "/reel/") != 0 {
+	if strings.Index(url.Path, "/reel/") != 0 && strings.Index(url.Path, "/p/") != 0 {
 		return nil, common.NotValid
 	}
 
