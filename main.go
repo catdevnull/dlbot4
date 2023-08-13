@@ -142,7 +142,15 @@ func main() {
 		debug = true
 	}
 
-	bot, err := tgbotapi.NewBotAPI(token)
+	apiEndpoint := os.Getenv("TELEGRAM_API_ENDPOINT")
+	var bot *tgbotapi.BotAPI
+	var err error
+	if apiEndpoint == "" {
+		bot, err = tgbotapi.NewBotAPI(token)
+	} else {
+		log.Printf("Setting endpoint to %s", apiEndpoint)
+		bot, err = tgbotapi.NewBotAPIWithAPIEndpoint(token, apiEndpoint)
+	}
 	if err != nil {
 		log.Panic(err)
 	}
@@ -150,6 +158,13 @@ func main() {
 	bot.Debug = debug
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
+
+	if len(os.Args) > 1 && os.Args[1] == "logout" {
+		logout := tgbotapi.LogOutConfig{}
+		bot.Send(logout)
+		log.Println("Logged out.")
+		return
+	}
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60

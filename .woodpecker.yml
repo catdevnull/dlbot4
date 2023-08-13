@@ -13,3 +13,17 @@ pipeline:
       - echo $REGISTRY_SECRET | apko login --username Nulo --password-stdin gitea.nulo.in
       - apko publish --debug --arch x86_64 --repository-append "$(pwd)/packages" --keyring-append melange.rsa.pub apko.yaml gitea.nulo.in/nulo/dlbot4:latest
     secrets: [REGISTRY_SECRET]
+
+  telegram-bot-api:
+    image: docker.io/woodpeckerci/plugin-docker-buildx
+    settings:
+      repo: gitea.nulo.in/Nulo/dlbot4/telegram-bot-api
+      context: ./telegram-bot-api-container
+      registry: https://gitea.nulo.in
+      username: Nulo
+      password:
+        from_secret: registry_secret
+    secrets: [REGISTRY_SECRET]
+    when:
+      branch: "antifascista"
+      event: "push"
