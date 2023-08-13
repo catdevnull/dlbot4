@@ -11,3 +11,20 @@ tasks:
       - ssh -p993 root@nulo.in sv stop dlbot
       - scp -P993 dlbot dlbot@nulo.in:/home/dlbot/bin/
       - ssh -p993 root@nulo.in sv start dlbot
+  melange:
+    cmds:
+      - podman run --privileged --rm -it
+        -v "$PWD":/work:Z
+        -v "$PWD"/.melange-cache:/work/melange-cache:Z
+        cgr.dev/chainguard/melange build
+        packaging/melange.yml
+        --arch x86_64 --signing-key packaging/melange.rsa
+  apko:
+    cmds:
+      - podman run --rm -it
+        -v "$PWD":/work:Z
+        cgr.dev/chainguard/apko:latest publish
+        --debug --arch x86_64
+        --repository-append "/work/packages" --keyring-append packaging/melange.rsa.pub
+        packaging/apko.yaml
+        gitea.nulo.in/nulo/dlbot:latest
