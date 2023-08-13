@@ -29,10 +29,10 @@ func (fu FileURL) NeedsUpload() bool {
 func (fu FileURL) UploadData() (string, io.Reader, error) {
 	res, err := http.Get(string(fu))
 	if err != nil {
-		return "", nil, err
+		return "", nil, errors.Join(errors.New("error while uploading FileURL"), err)
 	}
 	if res.StatusCode != http.StatusOK {
-		return "", nil, errors.New(res.Status)
+		return "", nil, errors.New("error while uploading FileURL: " + res.Status)
 	}
 	return "url.mp4", res.Body, nil
 }
