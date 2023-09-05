@@ -26,7 +26,7 @@ func (r *Instagram) Respond(url *url.URL) (*common.Uploadable, common.Error) {
 	lookup, err := r.lookup(url.String())
 	if err != nil {
 		log.Println(err)
-		if strings.Index(url.Path, "/p/") != 0 {
+		if strings.Index(url.Path, "/p/") == 0 {
 			return nil, common.NotValid
 		}
 		return nil, common.HadError
