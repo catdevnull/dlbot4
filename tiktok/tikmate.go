@@ -42,5 +42,5 @@ func (r *TikTok) lookup(urlS string) (string, error) {
 	if !lookup.Success {
 		return "", errors.New(lookup.Message)
 	}
-	return "https://tikmate.app/download/" + lookup.Token + "/" + lookup.ID + ".mp4?hd=1", nil
+	return "https://tikmate.app/download/" + lookup.Token + "/" + lookup.ID + ".mp4", nil
 }

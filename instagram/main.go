@@ -33,7 +33,7 @@ func (r *Instagram) Respond(url *url.URL) (*common.Uploadable, common.Error) {
 	}
 
 	return &common.Uploadable{
-		Url:     lookup.VideoUrl,
-		Caption: "instagram.com/" + lookup.Author,
+		VideoUrl: lookup.VideoUrl,
+		Caption:  "instagram.com/" + lookup.Author,
 	}, common.OK
 }

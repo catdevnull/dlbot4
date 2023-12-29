@@ -28,11 +28,11 @@ func (r *TikTok) Respond(url *url.URL) (*common.Uploadable, common.Error) {
 
 	urlString := url.String()
 
-	lookup, err := r.lookup(urlString)
+	lookup, err := r.cobaltLookup(urlString)
 	if err != nil {
 		log.Println(err)
 		return nil, common.HadError
 	}
 
-	return &common.Uploadable{Url: lookup}, common.OK
+	return lookup, common.OK
 }

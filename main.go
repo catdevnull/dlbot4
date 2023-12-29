@@ -95,13 +95,39 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 		}
 
 		if uploadable != nil {
-			res := tgbotapi.NewVideo(update.Message.Chat.ID, FileURL(uploadable.Url))
-			res.ReplyToMessageID = update.Message.MessageID
-			res.Caption = uploadable.Caption
-			_, err := bot.Send(res)
-			if err != nil {
-				log.Println("Error subiendo", url.String(), err)
-				bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
+			if uploadable.ImagesWithAudio != nil {
+				var files []interface{}
+				for _, u := range uploadable.ImagesWithAudio.ImageUrls {
+					files = append(files,
+						tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(u)),
+					)
+				}
+				log.Println(files)
+				mediaGroup := tgbotapi.NewMediaGroup(update.Message.Chat.ID, files)
+				mediaGroup.ReplyToMessageID = update.Message.MessageID
+
+				msgs, err := bot.SendMediaGroup(mediaGroup)
+				if err != nil {
+					log.Println("Error subiendo", url.String(), err)
+					bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
+				}
+				res := tgbotapi.NewAudio(update.Message.Chat.ID, FileURL(uploadable.AudioUrl))
+				res.ReplyToMessageID = msgs[0].MessageID
+				_, err = bot.Send(res)
+				if err != nil {
+					log.Println("Error subiendo", url.String(), err)
+					bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
+				}
+			} else {
+				res := tgbotapi.NewVideo(update.Message.Chat.ID, FileURL(uploadable.VideoUrl))
+				res.ReplyToMessageID = update.Message.MessageID
+				res.Caption = uploadable.Caption
+				_, err := bot.Send(res)
+				if err != nil {
+					log.Println("Error subiendo", url.String(), err)
+					bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
+				}
+
 			}
 		}
 
