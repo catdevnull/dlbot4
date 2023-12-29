@@ -4,13 +4,6 @@ tasks:
   build:
     cmds:
       - go build -tags=netgo .
-  upload:
-    deps:
-      - task: build
-    cmds:
-      - ssh -p993 root@nulo.in sv stop dlbot
-      - scp -P993 dlbot dlbot@nulo.in:/home/dlbot/bin/
-      - ssh -p993 root@nulo.in sv start dlbot
   ko:
     cmds:
       - podman run --rm -it
