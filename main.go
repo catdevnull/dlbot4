@@ -14,6 +14,7 @@ import (
 	"nulo.in/dlbot/common"
 	"nulo.in/dlbot/instagram"
 	"nulo.in/dlbot/tiktok"
+	"nulo.in/dlbot/youtube"
 )
 
 type Config struct {
@@ -155,6 +156,7 @@ func main() {
 		Responders: []common.Responder{
 			instagram.Responder,
 			tiktok.Responder,
+			youtube.Responder,
 		},
 	}
 
