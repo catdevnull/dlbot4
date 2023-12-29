@@ -28,7 +28,9 @@ func (r *TikTok) Respond(url *url.URL) (*common.Uploadable, common.Error) {
 
 	urlString := url.String()
 
-	lookup, err := r.cobaltLookup(urlString)
+	cobalt := common.CobaltClient{Client: &r.Client}
+
+	lookup, err := cobalt.Lookup(urlString)
 	if err != nil {
 		log.Println(err)
 		return nil, common.HadError

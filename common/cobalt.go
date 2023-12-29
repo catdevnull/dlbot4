@@ -1,12 +1,10 @@
-package tiktok
+package common
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"net/http"
-
-	"nulo.in/dlbot/common"
 )
 
 // https://github.com/wukko/cobalt/blob/current/docs/api.md
@@ -26,7 +24,11 @@ type jsonResponse struct {
 	AudioUrl string `json:"audio"`
 }
 
-func (r *TikTok) cobaltLookup(urlS string) (*common.Uploadable, error) {
+type CobaltClient struct {
+	*http.Client
+}
+
+func (c *CobaltClient) Lookup(urlS string) (*Uploadable, error) {
 	jsonReq := jsonRequest{
 		Url: urlS,
 	}
@@ -45,7 +47,7 @@ func (r *TikTok) cobaltLookup(urlS string) (*common.Uploadable, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	resp, err := r.Client.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +64,7 @@ func (r *TikTok) cobaltLookup(urlS string) (*common.Uploadable, error) {
 	}
 
 	if len(jsonRes.Url) > 0 {
-		return &common.Uploadable{
+		return &Uploadable{
 			VideoUrl: jsonRes.Url,
 		}, nil
 	}
@@ -72,8 +74,8 @@ func (r *TikTok) cobaltLookup(urlS string) (*common.Uploadable, error) {
 			imageUrls = append(imageUrls, i.Url)
 		}
 
-		return &common.Uploadable{
-			ImagesWithAudio: &common.ImagesWithAudio{
+		return &Uploadable{
+			ImagesWithAudio: &ImagesWithAudio{
 				AudioUrl:  jsonRes.AudioUrl,
 				ImageUrls: imageUrls,
 			},
