@@ -120,13 +120,14 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 					bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
 				}
 			} else {
+
 				res := tgbotapi.NewVideo(update.Message.Chat.ID, FileURL(uploadable.VideoUrl))
 				res.ReplyToMessageID = update.Message.MessageID
 				res.Caption = uploadable.Caption
 				_, err := bot.Send(res)
 				if err != nil {
 					log.Println("Error subiendo", url.String(), err)
-					bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
+					bot.Send(respondWithMany(update.Message, uploadable.VideoUrl, " (hubo un error al descargar ", url.String(), ", pero quizás lo puedas ver con este enlace)"))
 				}
 
 			}
