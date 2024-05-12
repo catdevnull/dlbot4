@@ -8,7 +8,7 @@ type Responder interface {
 	Respond(url *url.URL) (*Uploadable, Error)
 }
 type Uploadable struct {
-	VideoUrl string
+	MediaUrl string
 	*ImagesWithAudio
 	Caption string
 }

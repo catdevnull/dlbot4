@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
+	"log"
 	"net/http"
 )
 
@@ -25,6 +27,7 @@ type jsonResponse struct {
 }
 
 type CobaltClient struct {
+	Endpoint string
 	*http.Client
 }
 
@@ -37,9 +40,13 @@ func (c *CobaltClient) Lookup(urlS string) (*Uploadable, error) {
 		return nil, err
 	}
 
+	endpoint := c.Endpoint
+	if len(endpoint) == 0 {
+		endpoint = "https://co.wuk.sh"
+	}
 	req, err := http.NewRequest(
 		"POST",
-		"https://co.wuk.sh/api/json",
+		endpoint+"/api/json",
 		bytes.NewReader(reqByt),
 	)
 	if err != nil {
@@ -53,8 +60,15 @@ func (c *CobaltClient) Lookup(urlS string) (*Uploadable, error) {
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println(string(body))
+
 	var jsonRes jsonResponse
-	err = json.NewDecoder(resp.Body).Decode(&jsonRes)
+	err = json.Unmarshal(body, &jsonRes)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +79,7 @@ func (c *CobaltClient) Lookup(urlS string) (*Uploadable, error) {
 
 	if len(jsonRes.Url) > 0 {
 		return &Uploadable{
-			VideoUrl: jsonRes.Url,
+			MediaUrl: jsonRes.Url,
 		}, nil
 	}
 	if len(jsonRes.AudioUrl) > 0 && jsonRes.PickerType == "images" && len(jsonRes.Picker) > 0 {
