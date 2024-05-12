@@ -6,9 +6,9 @@ tasks:
       - go build -tags=netgo .
   ko:
     cmds:
-      - podman run --rm -it
-        -v ~/.docker/:/docker-config:Z,ro
-        -v $PWD:/work:Z
+      - docker run --rm -it
+        -v ~/.docker/:/docker-config,ro
+        -v $PWD:/work
         --workdir=/work
         -e KO_DOCKER_REPO=gitea.nulo.in/nulo/dlbot4
         -e DOCKER_CONFIG=/docker-config
