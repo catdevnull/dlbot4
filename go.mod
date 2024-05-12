@@ -8,9 +8,8 @@ require (
 	nulo.in/dlbot/instagram v0.0.0-00010101000000-000000000000
 	nulo.in/dlbot/tiktok v0.0.0-00010101000000-000000000000
 	nulo.in/dlbot/youtube v0.0.0-00010101000000-000000000000
+	nulo.in/dlbot/pinterest v0.0.0-00010101000000-000000000000
 )
-
-require nulo.in/dlbot/pinterest v0.0.0-00010101000000-000000000000 // indirect
 
 replace nulo.in/dlbot/common => ./common
 
