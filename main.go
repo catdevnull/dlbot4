@@ -13,12 +13,14 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"nulo.in/dlbot/common"
 	"nulo.in/dlbot/instagram"
+	"nulo.in/dlbot/pinterest"
 	"nulo.in/dlbot/tiktok"
 	"nulo.in/dlbot/youtube"
 )
 
-type Config struct {
+type Bot struct {
 	Responders []common.Responder
+	HTTPClient http.Client
 }
 
 type FileURL string
@@ -42,11 +44,11 @@ func (fu FileURL) SendData() string {
 	panic("we")
 }
 
-func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+func (bot Bot) handleMessage(tg *tgbotapi.BotAPI, update tgbotapi.Update) {
 	var explicit bool
 
 	send := func(c tgbotapi.Chattable) {
-		_, err := bot.Send(c)
+		_, err := tg.Send(c)
 		if err != nil {
 			log.Println("No pude enviar un mensaje porque", err)
 		}
@@ -79,7 +81,7 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 		url, err := url.Parse(text)
 		if err != nil {
 			if explicit {
-				bot.Send(respondWithMany(msg, "No se pudo detectar la URL %s.", text))
+				tg.Send(respondWithMany(msg, "No se pudo detectar la URL %s.", text))
 			}
 			continue
 		}
@@ -88,7 +90,7 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 
 		var uploadable *common.Uploadable
 		var érror common.Error
-		for _, responder := range config.Responders {
+		for _, responder := range bot.Responders {
 			uploadable, érror = responder.Respond(url)
 			if érror != common.NotValid {
 				break
@@ -107,34 +109,46 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 				mediaGroup := tgbotapi.NewMediaGroup(update.Message.Chat.ID, files)
 				mediaGroup.ReplyToMessageID = update.Message.MessageID
 
-				msgs, err := bot.SendMediaGroup(mediaGroup)
+				msgs, err := tg.SendMediaGroup(mediaGroup)
 				if err != nil {
 					log.Println("Error subiendo", url.String(), err)
-					bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
+					tg.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
 				}
 				res := tgbotapi.NewAudio(update.Message.Chat.ID, FileURL(uploadable.AudioUrl))
 				res.ReplyToMessageID = msgs[0].MessageID
-				_, err = bot.Send(res)
+				_, err = tg.Send(res)
 				if err != nil {
 					log.Println("Error subiendo", url.String(), err)
-					bot.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
+					tg.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
 				}
 			} else {
 
-				res := tgbotapi.NewVideo(update.Message.Chat.ID, FileURL(uploadable.VideoUrl))
-				res.ReplyToMessageID = update.Message.MessageID
-				res.Caption = uploadable.Caption
-				_, err := bot.Send(res)
+				headResp, err := bot.HTTPClient.Head(uploadable.MediaUrl)
 				if err != nil {
 					log.Println("Error subiendo", url.String(), err)
-					bot.Send(respondWithMany(update.Message, uploadable.VideoUrl, " (hubo un error al descargar ", url.String(), ", pero quizás lo puedas ver con este enlace)"))
+					tg.Send(respondWithMany(update.Message, "Hubo un error al descargar ", url.String(), "."))
 				}
 
+				if strings.Index(headResp.Header.Get("content-type"), "image/") == 0 {
+					res := tgbotapi.NewPhoto(update.Message.Chat.ID, FileURL(uploadable.MediaUrl))
+					res.ReplyToMessageID = update.Message.MessageID
+					res.Caption = uploadable.Caption
+					_, err = tg.Send(res)
+				} else {
+					res := tgbotapi.NewVideo(update.Message.Chat.ID, FileURL(uploadable.MediaUrl))
+					res.ReplyToMessageID = update.Message.MessageID
+					res.Caption = uploadable.Caption
+					_, err = tg.Send(res)
+				}
+				if err != nil {
+					log.Println("Error subiendo", url.String(), err)
+					tg.Send(respondWithMany(update.Message, uploadable.MediaUrl, " (hubo un error al descargar ", url.String(), ", pero quizás lo puedas ver con este enlace)"))
+				}
 			}
 		}
 
 		if explicit && érror == common.NotValid {
-			bot.Send(respondWithMany(msg, "La URL ", url.String(), " no es compatible con este bot."))
+			tg.Send(respondWithMany(msg, "La URL ", url.String(), " no es compatible con este bot."))
 			continue
 		}
 
@@ -148,16 +162,17 @@ func (config Config) handleMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 		}
 	}
 	if !hasDownloadables && explicit {
-		bot.Send(respondWithMany(msg, "No encontré URLs descargables en ese mensaje."))
+		tg.Send(respondWithMany(msg, "No encontré URLs descargables en ese mensaje."))
 	}
 }
 
 func main() {
-	config := Config{
+	config := Bot{
 		Responders: []common.Responder{
 			instagram.Responder,
 			tiktok.Responder,
 			youtube.Responder,
+			pinterest.Responder,
 		},
 	}
 

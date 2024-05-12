@@ -10,6 +10,8 @@ require (
 	nulo.in/dlbot/youtube v0.0.0-00010101000000-000000000000
 )
 
+require nulo.in/dlbot/pinterest v0.0.0-00010101000000-000000000000 // indirect
+
 replace nulo.in/dlbot/common => ./common
 
 replace nulo.in/dlbot/instagram => ./instagram
@@ -17,3 +19,5 @@ replace nulo.in/dlbot/instagram => ./instagram
 replace nulo.in/dlbot/tiktok => ./tiktok
 
 replace nulo.in/dlbot/youtube => ./youtube
+
+replace nulo.in/dlbot/pinterest => ./pinterest
