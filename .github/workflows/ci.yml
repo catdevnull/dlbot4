@@ -1,6 +1,7 @@
 name: Publish
 
 on:
+  workflow_dispatcH:
   push:
     branches: ["Viva-la-República-Popular-China"]
 
