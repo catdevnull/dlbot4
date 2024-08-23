@@ -42,7 +42,7 @@ func (c *CobaltClient) Lookup(urlS string) (*Uploadable, error) {
 
 	endpoint := c.Endpoint
 	if len(endpoint) == 0 {
-		endpoint = "https://apicobalt.nulo.in"
+		endpoint = "https://dorsiblancoapicobalt.nulo.in"
 	}
 	req, err := http.NewRequest(
 		"POST",
