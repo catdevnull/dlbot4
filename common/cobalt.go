@@ -46,7 +46,7 @@ func (c *CobaltClient) Lookup(urlS string) (*Uploadable, error) {
 	}
 	req, err := http.NewRequest(
 		"POST",
-		endpoint+"/api/json",
+		endpoint,
 		bytes.NewReader(reqByt),
 	)
 	if err != nil {
