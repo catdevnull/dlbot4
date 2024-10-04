@@ -30,12 +30,7 @@ func (r *Instagram) Respond(url *url.URL) (*common.Uploadable, common.Error) {
 	if err == nil {
 		return uploadable, common.OK
 	}
-
 	log.Println("cobalt error", err, "; falling back to direct lookup")
-	if strings.Index(url.Path, "/reel/") != 0 {
-		return nil, common.NotValid
-	}
-
 	lookup, err := r.lookup(url.String())
 	if err != nil {
 		log.Println("direct lookup error", err)
