@@ -23,22 +23,23 @@ func (r *Instagram) Respond(url *url.URL) (*common.Uploadable, common.Error) {
 		return nil, common.NotValid
 	}
 
+	cobalt := common.CobaltClient{
+		Client:   &r.Client,
+		Endpoint: "https://apicobalt.nulo.in"}
+	uploadable, err := cobalt.Lookup(url.String())
+	if err == nil {
+		return uploadable, common.OK
+	}
+
+	log.Println("cobalt error", err, "; falling back to direct lookup")
+	if strings.Index(url.Path, "/reel/") != 0 {
+		return nil, common.NotValid
+	}
+
 	lookup, err := r.lookup(url.String())
 	if err != nil {
-		log.Println(err, ";falling back to cobalt")
-		if strings.Index(url.Path, "/p/") == 0 {
-			return nil, common.NotValid
-		}
-		cobalt := common.CobaltClient{
-			Client:   &r.Client,
-			Endpoint: "https://apicobalt.nulo.in"}
-
-		uploadable, err := cobalt.Lookup(url.String())
-		if err != nil {
-			log.Println("cobalt error", err)
-			return nil, common.HadError
-		}
-		return uploadable, common.OK
+		log.Println("direct lookup error", err)
+		return nil, common.HadError
 	}
 
 	return &common.Uploadable{
