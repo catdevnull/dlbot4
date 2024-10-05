@@ -5,6 +5,11 @@ import { Readable } from "node:stream";
 // https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#file-options-metadata
 process.env.NTBA_FIX_350 = "false";
 
+const botParams = {
+  polling: true,
+  baseApiUrl: process.env.TELEGRAM_API_URL,
+};
+
 const CobaltResult = z.discriminatedUnion("status", [
   z.object({
     status: z.literal("error"),
@@ -69,7 +74,7 @@ async function askCobalt(
 class Bot {
   private bot: TelegramBot;
   constructor(token: string) {
-    this.bot = new TelegramBot(token, { polling: true });
+    this.bot = new TelegramBot(token, botParams);
     this.bot.getMe().then((me) => {
       console.log("Bot initialized as", me.username);
     });
@@ -230,11 +235,9 @@ if (!token) {
 }
 
 if (process.argv[2] === "logout") {
-  const bot = new TelegramBot(token, {
-    polling: true,
-    baseApiUrl: process.env.TELEGRAM_API_URL,
-  });
+  const bot = new TelegramBot(token, botParams);
   await bot.logOut();
+  process.exit(0);
 }
 
 new Bot(token);
