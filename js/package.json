@@ -1,0 +1,17 @@
+{
+  "name": "js",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^22.7.4",
+    "@types/node-telegram-bot-api": "^0.64.7"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0",
+    "zod": "^3.23.8"
+  }
+}
