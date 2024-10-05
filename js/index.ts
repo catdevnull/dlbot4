@@ -128,11 +128,6 @@ class Bot {
       console.log(JSON.stringify(cobaltResult));
       if (cobaltResult.status === "error") {
         if (cobaltResult.error.code === "error.api.link.invalid") {
-          await this.bot.sendMessage(
-            chatId,
-            `No puedo descargar URLs como ${parsedUrl.href}.`,
-            { reply_to_message_id: msg.message_id }
-          );
           continue;
         }
 
