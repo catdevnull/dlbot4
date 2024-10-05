@@ -127,7 +127,12 @@ class Bot {
       const cobaltResult = await askCobalt(parsedUrl.href);
       console.log(JSON.stringify(cobaltResult));
       if (cobaltResult.status === "error") {
-        if (cobaltResult.error.code === "error.api.link.invalid") {
+        if (
+          // no soportamos ese servicio
+          cobaltResult.error.code === "error.api.link.invalid" ||
+          // no soportamos este tipo de link
+          cobaltResult.error.code === "error.api.link.unsupported"
+        ) {
           continue;
         }
 
