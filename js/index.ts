@@ -1,6 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
+import { Readable, type Stream } from "stream";
 import { z } from "zod";
-import { Readable } from "node:stream";
 
 // https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#file-options-metadata
 process.env.NTBA_FIX_350 = "false";
@@ -184,7 +184,7 @@ class Bot {
     }
   ): Promise<void> {
     const downloadUrl = cobaltResult.url;
-    let downloadFrom: string | Readable = downloadUrl;
+    let downloadFrom: string | Stream = downloadUrl;
     let contentType: string | undefined;
     if (downloadUrl.includes("cdninstagram.com")) {
       // proxy instead because Telegram blocks instagram.com domains
@@ -224,6 +224,8 @@ class Bot {
       }
       console.error(`Error al enviar el video ${downloadUrl}:`, e);
       throw e;
+    } finally {
+      Bun.gc(true);
     }
   }
 }
