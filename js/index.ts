@@ -131,7 +131,9 @@ class Bot {
           // no soportamos ese servicio
           cobaltResult.error.code === "error.api.link.invalid" ||
           // no soportamos este tipo de link
-          cobaltResult.error.code === "error.api.link.unsupported"
+          cobaltResult.error.code === "error.api.link.unsupported" ||
+          // no hay nada en este link
+          cobaltResult.error.code === "error.api.fetch.empty"
         ) {
           continue;
         }
