@@ -1,6 +1,8 @@
 import TelegramBot from "node-telegram-bot-api";
 import { Readable, type Stream } from "stream";
 import { z } from "zod";
+import { askCobalt, CobaltResult } from "./cobalt";
+import { askFxtwitter } from "./fxtwitter";
 
 // https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#file-options-metadata
 process.env.NTBA_FIX_350 = "false";
@@ -9,67 +11,6 @@ const botParams = {
   polling: true,
   baseApiUrl: process.env.TELEGRAM_API_URL,
 };
-
-const CobaltResult = z.discriminatedUnion("status", [
-  z.object({
-    status: z.literal("error"),
-    error: z.object({
-      code: z.string(),
-      context: z
-        .object({
-          service: z.string().optional(),
-          limit: z.number().optional(),
-        })
-        .optional(),
-    }),
-  }),
-  z.object({
-    status: z.literal("picker"),
-    audio: z.string().optional(),
-    audioFilename: z.string().optional(),
-    picker: z.array(
-      z.object({
-        type: z.enum(["photo", "video", "gif"]),
-        url: z.string(),
-        thumb: z.string().optional(),
-      })
-    ),
-  }),
-  z.object({
-    status: z.enum(["tunnel", "redirect"]),
-    url: z.string(),
-    filename: z.string(),
-  }),
-]);
-type CobaltResult = z.infer<typeof CobaltResult>;
-type VideoQuality =
-  | "144"
-  | "240"
-  | "360"
-  | "480"
-  | "720"
-  | "1080"
-  | "1440"
-  | "2160"
-  | "4320"
-  | "max";
-async function askCobalt(
-  url: string,
-  options?: {
-    videoQuality?: VideoQuality;
-  }
-) {
-  const response = await fetch(`https://dorsiblancoapicobalt.nulo.in/`, {
-    method: "POST",
-    body: JSON.stringify({ url, ...options }),
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
-  const data = await response.json();
-  return CobaltResult.parse(data);
-}
 
 class Bot {
   private bot: TelegramBot;
@@ -123,6 +64,49 @@ class Bot {
       }
 
       console.log(`Descargando ${parsedUrl.href}`);
+
+      if (
+        parsedUrl.hostname === "twitter.com" ||
+        parsedUrl.hostname === "x.com"
+      ) {
+        try {
+          const pathParts = parsedUrl.pathname.split("/");
+          const statusIndex = pathParts.indexOf("status");
+          if (statusIndex !== -1 && statusIndex + 1 < pathParts.length) {
+            const screenName = pathParts[1];
+            const tweetId = pathParts[statusIndex + 1];
+            const fxResult = await askFxtwitter(screenName, tweetId);
+            hasDownloadables = true;
+            await this.bot.sendMessage(
+              chatId,
+              `${fxResult.tweet.author.name} (@${
+                fxResult.tweet.author.screen_name
+              }):\n<blockquote>${fxResult.tweet.text}${
+                fxResult.tweet.quote
+                  ? `</blockquote>\nQuoting: ${fxResult.tweet.quote.author.name} (@${fxResult.tweet.quote.author.screen_name}):\n<blockquote>${fxResult.tweet.quote.text}`
+                  : ""
+              }</blockquote>\nhttps://fxtwitter.com/${screenName}/status/${tweetId}`,
+              { reply_to_message_id: msg.message_id, parse_mode: "HTML" }
+            );
+            if (fxResult.tweet.media?.all?.length) {
+              await this.bot.sendMediaGroup(
+                chatId,
+                fxResult.tweet.media?.all?.map((media) => ({
+                  type: media.type === "gif" ? "photo" : media.type,
+                  media: media.url,
+                  thumb: media.thumbnail_url,
+                })) ?? [],
+                {
+                  reply_to_message_id: msg.message_id,
+                }
+              );
+            }
+            continue;
+          }
+        } catch (error) {
+          console.error("Failed to fetch from fxtwitter:", error);
+        }
+      }
 
       const cobaltResult = await askCobalt(parsedUrl.href);
       console.log(JSON.stringify(cobaltResult));
