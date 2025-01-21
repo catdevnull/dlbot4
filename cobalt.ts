@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { USER_AGENT } from "./consts";
 
+const COBALT_INSTANCES = [
+  "https://dorsiblancoapicobalt.nulo.in/",
+  "https://cobalt.izq.nulo.in/",
+];
+
 export const CobaltResult = z.discriminatedUnion("status", [
   z.object({
     status: z.literal("error"),
@@ -48,17 +53,39 @@ export async function askCobalt(
   url: string,
   options?: {
     videoQuality?: VideoQuality;
-  }
+  },
+  retryWith?: number
 ) {
-  const response = await fetch(`https://dorsiblancoapicobalt.nulo.in/`, {
-    method: "POST",
-    body: JSON.stringify({ url, ...options }),
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "User-Agent": USER_AGENT,
-    },
-  });
-  const data = await response.json();
-  return CobaltResult.parse(data);
+  retryWith ??= 0;
+
+  try {
+    const response = await fetch(
+      `${COBALT_INSTANCES[retryWith % COBALT_INSTANCES.length]}/`,
+      {
+        method: "POST",
+        body: JSON.stringify({ url, ...options }),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "User-Agent": USER_AGENT,
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error(
+        `Cobalt instance ${
+          COBALT_INSTANCES[retryWith % COBALT_INSTANCES.length]
+        } is down`
+      );
+    }
+    const data = await response.json();
+
+    return CobaltResult.parse(data);
+  } catch (error) {
+    if (retryWith < COBALT_INSTANCES.length - 1) {
+      console.warn(error, `, retrying with ${COBALT_INSTANCES[retryWith + 1]}`);
+      return askCobalt(url, options, retryWith + 1);
+    }
+    throw error;
+  }
 }
