@@ -65,7 +65,7 @@ export async function askCobalt(
       `${COBALT_INSTANCES[retryWith % COBALT_INSTANCES.length]}/`,
       {
         method: "POST",
-        body: JSON.stringify({ url, ...options }),
+        body: JSON.stringify({ url, ...options, alwaysProxy: true }),
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -78,7 +78,7 @@ export async function askCobalt(
       throw new Error(
         `Cobalt instance ${
           COBALT_INSTANCES[retryWith % COBALT_INSTANCES.length]
-        } is down`
+        } threw an error: ${response.status}`
       );
     }
     const data = await response.json();
