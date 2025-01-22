@@ -64,6 +64,7 @@ class Bot {
       }
 
       console.log(`Descargando ${parsedUrl.href}`);
+      this.bot.sendChatAction(chatId, "typing");
 
       if (
         parsedUrl.hostname === "twitter.com" ||
@@ -132,11 +133,13 @@ class Bot {
         cobaltResult.status === "tunnel" ||
         cobaltResult.status === "redirect"
       ) {
+        this.bot.sendChatAction(chatId, "upload_video");
         await this.sendSingular(chatId, parsedUrl.href, cobaltResult, {
           replyToMessageId: msg.message_id,
         });
         hasDownloadables = true;
       } else if (cobaltResult.status === "picker") {
+        this.bot.sendChatAction(chatId, "upload_photo");
         const mediaGroup: TelegramBot.InputMedia[] = cobaltResult.picker.map(
           (item) => ({
             type: item.type === "gif" ? "photo" : item.type,
