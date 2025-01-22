@@ -2,8 +2,8 @@ import { z } from "zod";
 import { USER_AGENT } from "./consts";
 
 const COBALT_INSTANCES = [
-  "https://dorsiblancoapicobalt.nulo.in/",
   "https://cobalt.izq.nulo.in/",
+  "https://dorsiblancoapicobalt.nulo.in/",
 ];
 
 export const CobaltResult = z.discriminatedUnion("status", [
@@ -59,6 +59,8 @@ export async function askCobalt(
   retryWith ??= 0;
 
   try {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 10000);
     const response = await fetch(
       `${COBALT_INSTANCES[retryWith % COBALT_INSTANCES.length]}/`,
       {
@@ -69,6 +71,7 @@ export async function askCobalt(
           Accept: "application/json",
           "User-Agent": USER_AGENT,
         },
+        signal: controller.signal,
       }
     );
     if (!response.ok) {
