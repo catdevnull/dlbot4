@@ -11,6 +11,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "nanoid": "^5.0.9",
     "node-telegram-bot-api": "^0.66.0",
     "zod": "^3.23.8"
   }

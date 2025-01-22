@@ -1,8 +1,12 @@
-import TelegramBot from "node-telegram-bot-api";
+import TelegramBot, {
+  type InlineQueryResult,
+  type MessageEntity,
+} from "node-telegram-bot-api";
 import { Readable, type Stream } from "stream";
 import { z } from "zod";
 import { askCobalt, CobaltResult } from "./cobalt";
 import { askFxtwitter } from "./fxtwitter";
+import { nanoid } from "nanoid";
 
 // https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#file-options-metadata
 process.env.NTBA_FIX_350 = "false";
@@ -14,6 +18,7 @@ const botParams = {
 
 class Bot {
   private bot: TelegramBot;
+  private inlineQueryIdCache: Map<string, string> = new Map();
   constructor(token: string) {
     this.bot = new TelegramBot(token, botParams);
     this.bot.getMe().then((me) => {
@@ -30,6 +35,86 @@ class Bot {
         );
       });
     });
+    this.bot.on("inline_query", async (query: TelegramBot.InlineQuery) => {
+      try {
+        if (query.query.trim() === "") {
+          return await this.bot.answerInlineQuery(query.id, [
+            {
+              type: "article",
+              id: "1",
+              title: "Pega un enlace de TikTok o Instagram para descargarlo",
+              description:
+                "Pega un enlace de TikTok o Instagram para descargarlo",
+              input_message_content: {
+                message_text:
+                  "Pega un enlace de TikTok o Instagram para descargarlo",
+              },
+            },
+          ]);
+        }
+        const result = await askCobalt(query.query);
+        console.log(JSON.stringify(result));
+
+        if (result.status === "tunnel" || result.status === "redirect") {
+          await this.bot.answerInlineQuery(query.id, [
+            {
+              type: "video",
+              id: "1",
+              video_url: result.url,
+              title: result.filename,
+              mime_type: "video/mp4",
+              thumb_url: result.url,
+            },
+          ]);
+        } else if (result.status === "picker") {
+          let results: InlineQueryResult[] = [];
+
+          if (result.audio) {
+            results.push({
+              type: "audio",
+              id: Math.random().toString(),
+              audio_url: result.audio,
+              title: result.audioFilename || "Audio",
+            });
+          }
+
+          for (const item of result.picker) {
+            if (item.type === "video") {
+              results.push({
+                type: "video",
+                id: Math.random().toString(),
+                video_url: item.url,
+                title: item.type,
+                mime_type: "video/mp4",
+                thumb_url: item.thumb || item.url,
+              });
+            } else {
+              results.push({
+                type: "photo",
+                id: Math.random().toString(),
+                photo_url: item.url,
+                thumb_url: item.thumb || item.url,
+                title: item.type,
+              });
+            }
+          }
+
+          console.log("Answering with results", results);
+
+          const queryId = nanoid();
+          this.inlineQueryIdCache.set(queryId, query.query);
+
+          await this.bot.answerInlineQuery(query.id, results, {
+            cache_time: 0,
+            is_personal: true,
+            switch_pm_text: "Descargar todo junto",
+            switch_pm_parameter: queryId,
+          });
+        }
+      } catch (error) {
+        console.error("Error al manejar la consulta:", error);
+      }
+    });
   }
 
   async handleMessage(msg: TelegramBot.Message): Promise<void> {
@@ -40,17 +125,30 @@ class Bot {
     let searchMsg =
       isExplicit && msg.reply_to_message ? msg.reply_to_message : msg;
     if (!searchMsg.text) return;
-    const entities = searchMsg.entities || [];
+    const entities: (MessageEntity & { urlText?: string })[] =
+      searchMsg.entities || [];
+
+    if (searchMsg.text.startsWith("/start ")) {
+      const parts = searchMsg.text.split(" ");
+      const cached = this.inlineQueryIdCache.get(parts[1]);
+      if (cached) {
+        entities.push({
+          type: "url",
+          length: cached.length,
+          offset: 0,
+          urlText: cached,
+        });
+      }
+    }
 
     let hasDownloadables = false;
 
     for (const entity of entities) {
       if (entity.type !== "url") continue;
 
-      const urlText = searchMsg.text.slice(
-        entity.offset,
-        entity.offset + entity.length
-      );
+      const urlText =
+        entity.urlText ||
+        searchMsg.text.slice(entity.offset, entity.offset + entity.length);
       let parsedUrl;
       try {
         parsedUrl = new URL(urlText);
