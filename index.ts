@@ -138,6 +138,9 @@ class Bot {
           offset: 0,
           urlText: cached,
         });
+        await this.bot.sendMessage(chatId, `Descargando ${cached}...`, {
+          reply_to_message_id: msg.message_id,
+        });
       }
     }
 
