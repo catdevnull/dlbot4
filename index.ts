@@ -238,6 +238,11 @@ class Bot {
         hasDownloadables = true;
       } else if (cobaltResult.status === "picker") {
         this.bot.sendChatAction(chatId, "upload_photo");
+        if (cobaltResult.audio) {
+          await this.bot.sendAudio(chatId, cobaltResult.audio, {
+            reply_to_message_id: msg.message_id,
+          });
+        }
         const mediaGroup: TelegramBot.InputMedia[] = cobaltResult.picker.map(
           (item) => ({
             type: item.type === "gif" ? "photo" : item.type,
