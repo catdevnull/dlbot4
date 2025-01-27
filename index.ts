@@ -3,8 +3,7 @@ import TelegramBot, {
   type MessageEntity,
 } from "node-telegram-bot-api";
 import { Readable, type Stream } from "stream";
-import { z } from "zod";
-import { askCobalt, CobaltResult, getRealUrl, isAllowedDomain } from "./cobalt";
+import { askCobalt, CobaltResult, getRealUrl } from "./cobalt";
 import { askFxtwitter } from "./fxtwitter";
 import { nanoid } from "nanoid";
 
@@ -166,14 +165,8 @@ class Bot {
 
       const realUrl = getRealUrl(parsedUrl.href);
 
-      console.log(
-        `Descargando ${parsedUrl.href}${
-          parsedUrl.href === realUrl ? "" : ` -> ${realUrl}`
-        }`
-      );
-
       // Skip non-allowed domains silently for non-explicit requests
-      if (!isAllowedDomain(parsedUrl.href)) {
+      if (!realUrl) {
         if (isExplicit) {
           await this.bot.sendMessage(
             chatId,
@@ -184,6 +177,11 @@ class Bot {
         }
         continue;
       }
+      console.log(
+        `Descargando ${parsedUrl.href}${
+          parsedUrl.href === realUrl ? "" : ` -> ${realUrl}`
+        }`
+      );
 
       this.bot.sendChatAction(chatId, "typing");
 
