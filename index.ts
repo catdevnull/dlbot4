@@ -4,7 +4,7 @@ import TelegramBot, {
 } from "node-telegram-bot-api";
 import { Readable, type Stream } from "stream";
 import { z } from "zod";
-import { askCobalt, CobaltResult } from "./cobalt";
+import { askCobalt, CobaltResult, getRealUrl, isAllowedDomain } from "./cobalt";
 import { askFxtwitter } from "./fxtwitter";
 import { nanoid } from "nanoid";
 
@@ -164,7 +164,27 @@ class Bot {
         }
       }
 
-      console.log(`Descargando ${parsedUrl.href}`);
+      const realUrl = getRealUrl(parsedUrl.href);
+
+      console.log(
+        `Descargando ${parsedUrl.href}${
+          parsedUrl.href === realUrl ? "" : ` -> ${realUrl}`
+        }`
+      );
+
+      // Skip non-allowed domains silently for non-explicit requests
+      if (!isAllowedDomain(parsedUrl.href)) {
+        if (isExplicit) {
+          await this.bot.sendMessage(
+            chatId,
+            `Lo siento, pero no puedo descargar de ${parsedUrl.hostname}. Solo soporto TikTok, Instagram, Twitter/X y YouTube.`,
+            { reply_to_message_id: msg.message_id }
+          );
+          hasDownloadables = true;
+        }
+        continue;
+      }
+
       this.bot.sendChatAction(chatId, "typing");
 
       if (
