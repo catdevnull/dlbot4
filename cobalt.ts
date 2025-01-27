@@ -6,6 +6,38 @@ const COBALT_INSTANCES = [
   "https://dorsiblancoapicobalt.nulo.in/",
 ];
 
+// List of allowed domains for video downloads
+const ALLOWED_DOMAINS = [
+  "tiktok.com",
+  "instagram.com",
+  "twitter.com",
+  "x.com",
+  "youtube.com",
+  "youtu.be",
+  "bsky.app",
+];
+export function getRealUrl(url: string): string | null {
+  url = url.replaceAll("ddinstagram", "instagram");
+  url = url.replaceAll("fixupx.com", "x.com");
+  url = url.replaceAll("fxtwitter.com", "x.com");
+
+  try {
+    const urlObj = new URL(url);
+    if (
+      !ALLOWED_DOMAINS.some(
+        (domain) =>
+          urlObj.hostname === domain ||
+          urlObj.hostname === `www.${domain}` ||
+          urlObj.hostname.endsWith(`.${domain}`)
+      )
+    )
+      return null;
+    return url;
+  } catch {
+    return null;
+  }
+}
+
 export const CobaltResult = z.discriminatedUnion("status", [
   z.object({
     status: z.literal("error"),
