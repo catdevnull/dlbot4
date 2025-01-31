@@ -6,6 +6,7 @@ import { Readable, type Stream } from "stream";
 import { askCobalt, CobaltResult, getRealUrl } from "./cobalt";
 import { askFxtwitter } from "./fxtwitter";
 import { nanoid } from "nanoid";
+import pAll from "p-all";
 
 // https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#file-options-metadata
 process.env.NTBA_FIX_350 = "false";
@@ -264,25 +265,24 @@ class Bot {
             reply_to_message_id: msg.message_id,
           });
         }
-        const mediaItems: TelegramBot.InputMedia[] = await Promise.all(
-          cobaltResult.picker.map(async (item) => {
-            const media = (await fetch(item.url).then((res) =>
-              Readable.fromWeb(res.body as any)
-            )) as any;
+        const mediaItems: TelegramBot.InputMedia[] = await pAll(
+          cobaltResult.picker.map((item) => async () => {
+            const media = Buffer.from(
+              await fetch(item.url).then((res) =>
+                res.ok
+                  ? res.arrayBuffer()
+                  : (() => {
+                      throw new Error(`Failed to fetch media: ${res.status}`);
+                    })()
+              )
+            ) as any;
             if (item.type === "video")
-              return {
-                type: "video",
-                media,
-                thumb: item.thumb,
-              } as TelegramBot.InputMedia;
+              return { type: "video", media } as TelegramBot.InputMedia;
             if (item.type === "photo" || item.type === "gif")
-              return {
-                type: "photo",
-                media,
-                thumb: item.thumb,
-              } as TelegramBot.InputMedia;
+              return { type: "photo", media } as TelegramBot.InputMedia;
             throw new Error(`Unsupported media type: ${item.type}`);
-          })
+          }),
+          { concurrency: 4 }
         );
         const mediaGroups: TelegramBot.InputMedia[][] = [];
         for (let i = 0; i < mediaItems.length; i += 10) {
@@ -317,6 +317,8 @@ class Bot {
   ): Promise<void> {
     const downloadUrl = cobaltResult.url;
     const res = await fetch(downloadUrl);
+    if (!res.ok)
+      throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
     try {
       await this.bot.sendVideo(
         chatId,
