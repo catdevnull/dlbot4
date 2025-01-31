@@ -7,6 +7,7 @@ import { askCobalt, CobaltResult, getRealUrl } from "./cobalt";
 import { askFxtwitter } from "./fxtwitter";
 import { nanoid } from "nanoid";
 import pAll from "p-all";
+import { USER_AGENT } from "./consts";
 
 // https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#file-options-metadata
 process.env.NTBA_FIX_350 = "false";
@@ -15,6 +16,19 @@ const botParams = {
   polling: true,
   baseApiUrl: process.env.TELEGRAM_API_URL,
 };
+
+async function dumpBufferFromUrl(url: string) {
+  const media = Buffer.from(
+    await fetch(url, { headers: { "User-Agent": USER_AGENT } }).then((res) =>
+      res.ok
+        ? res.arrayBuffer()
+        : (() => {
+            throw new Error(`Failed to fetch media: ${res.status}`);
+          })()
+    )
+  );
+  return media;
+}
 
 class Bot {
   private bot: TelegramBot;
@@ -261,21 +275,17 @@ class Bot {
       } else if (cobaltResult.status === "picker") {
         this.bot.sendChatAction(chatId, "upload_photo");
         if (cobaltResult.audio) {
-          await this.bot.sendAudio(chatId, cobaltResult.audio, {
-            reply_to_message_id: msg.message_id,
-          });
+          await this.bot.sendAudio(
+            chatId,
+            await dumpBufferFromUrl(cobaltResult.audio),
+            {
+              reply_to_message_id: msg.message_id,
+            }
+          );
         }
         const mediaItems: TelegramBot.InputMedia[] = await pAll(
           cobaltResult.picker.map((item) => async () => {
-            const media = Buffer.from(
-              await fetch(item.url).then((res) =>
-                res.ok
-                  ? res.arrayBuffer()
-                  : (() => {
-                      throw new Error(`Failed to fetch media: ${res.status}`);
-                    })()
-              )
-            ) as any;
+            const media = (await dumpBufferFromUrl(item.url)) as any;
             if (item.type === "video")
               return { type: "video", media } as TelegramBot.InputMedia;
             if (item.type === "photo" || item.type === "gif")
@@ -316,7 +326,9 @@ class Bot {
     }
   ): Promise<void> {
     const downloadUrl = cobaltResult.url;
-    const res = await fetch(downloadUrl);
+    const res = await fetch(downloadUrl, {
+      headers: { "User-Agent": USER_AGENT },
+    });
     if (!res.ok)
       throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
     try {
