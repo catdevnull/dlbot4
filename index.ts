@@ -264,11 +264,24 @@ class Bot {
             reply_to_message_id: msg.message_id,
           });
         }
-        const mediaItems: TelegramBot.InputMedia[] = cobaltResult.picker.map(
-          (item) => ({
-            type: item.type === "gif" ? "photo" : item.type,
-            media: item.url,
-            thumb: item.thumb,
+        const mediaItems: TelegramBot.InputMedia[] = await Promise.all(
+          cobaltResult.picker.map(async (item) => {
+            const media = (await fetch(item.url).then((res) =>
+              Readable.fromWeb(res.body as any)
+            )) as any;
+            if (item.type === "video")
+              return {
+                type: "video",
+                media,
+                thumb: item.thumb,
+              } as TelegramBot.InputMedia;
+            if (item.type === "photo" || item.type === "gif")
+              return {
+                type: "photo",
+                media,
+                thumb: item.thumb,
+              } as TelegramBot.InputMedia;
+            throw new Error(`Unsupported media type: ${item.type}`);
           })
         );
         const mediaGroups: TelegramBot.InputMedia[][] = [];
