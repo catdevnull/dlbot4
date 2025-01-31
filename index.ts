@@ -264,16 +264,22 @@ class Bot {
             reply_to_message_id: msg.message_id,
           });
         }
-        const mediaGroup: TelegramBot.InputMedia[] = cobaltResult.picker.map(
+        const mediaItems: TelegramBot.InputMedia[] = cobaltResult.picker.map(
           (item) => ({
             type: item.type === "gif" ? "photo" : item.type,
             media: item.url,
             thumb: item.thumb,
           })
         );
-        await this.bot.sendMediaGroup(chatId, mediaGroup, {
-          reply_to_message_id: msg.message_id,
-        });
+        const mediaGroups: TelegramBot.InputMedia[][] = [];
+        for (let i = 0; i < mediaItems.length; i += 10) {
+          mediaGroups.push(mediaItems.slice(i, i + 10));
+        }
+        for (let i = 0; i < Math.min(mediaGroups.length, 15); i++) {
+          await this.bot.sendMediaGroup(chatId, mediaGroups[i], {
+            reply_to_message_id: i === 0 ? msg.message_id : undefined,
+          });
+        }
         hasDownloadables = true;
       }
     }
