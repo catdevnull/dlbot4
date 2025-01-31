@@ -1,10 +1,20 @@
 import { z } from "zod";
 import { USER_AGENT } from "./consts";
 
-const COBALT_INSTANCES = [
-  "https://cobalt.izq.nulo.in/",
-  "https://dorsiblancoapicobalt.nulo.in/",
-];
+type CobaltInstance = string;
+
+export const COBALT_INSTANCES = (() => {
+  const entries = process.env.COBALT_INSTANCES?.split(",") || [];
+
+  const urls = entries.map((url) => url.trim()).filter((url) => url.length > 0);
+  if (urls.length === 0) {
+    return [
+      "https://cobalt.izq.nulo.in/",
+      "https://dorsiblancoapicobalt.nulo.in/",
+    ];
+  }
+  return urls;
+})();
 
 // List of allowed domains for video downloads
 const ALLOWED_DOMAINS = [
