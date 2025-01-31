@@ -297,21 +297,18 @@ class Bot {
     }
   ): Promise<void> {
     const downloadUrl = cobaltResult.url;
-    let downloadFrom: string = downloadUrl;
-    let contentType: string | undefined;
-    const headRes = await fetch(downloadFrom, { method: "HEAD" });
-    console.info("HEAD", headRes.headers);
+    const res = await fetch(downloadUrl);
     try {
       await this.bot.sendVideo(
         chatId,
-        downloadFrom,
+        Readable.fromWeb(res.body as any),
         {
           reply_to_message_id: options.replyToMessageId,
           caption: cobaltResult.filename,
         },
         {
           filename: cobaltResult.filename,
-          contentType,
+          contentType: res.headers.get("Content-Type")!,
         }
       );
     } catch (e) {
