@@ -120,7 +120,7 @@ export async function askCobalt(
       throw new Error(
         `Cobalt instance ${
           COBALT_INSTANCES[retryWith % COBALT_INSTANCES.length]
-        } threw an error: ${response.status}`
+        } threw an error: ${response.status} (${await response.text()})`
       );
     }
     const data = await response.json();
