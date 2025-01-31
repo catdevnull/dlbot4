@@ -297,14 +297,10 @@ class Bot {
     }
   ): Promise<void> {
     const downloadUrl = cobaltResult.url;
-    let downloadFrom: string | Stream = downloadUrl;
+    let downloadFrom: string = downloadUrl;
     let contentType: string | undefined;
-    if (downloadUrl.includes("cdninstagram.com")) {
-      // proxy instead because Telegram blocks instagram.com domains
-      const res = await fetch(downloadUrl);
-      downloadFrom = res.body ? Readable.fromWeb(res.body as any) : downloadUrl;
-      contentType = res.headers.get("content-type") ?? undefined;
-    }
+    const headRes = await fetch(downloadFrom, { method: "HEAD" });
+    console.info("HEAD", headRes.headers);
     try {
       await this.bot.sendVideo(
         chatId,
