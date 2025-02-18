@@ -25,6 +25,7 @@ const ALLOWED_DOMAINS = [
   "youtube.com",
   "youtu.be",
   "bsky.app",
+  "pin.it",
 ];
 export function getRealUrl(url: string): string | null {
   url = url.replaceAll("ddinstagram", "instagram");
