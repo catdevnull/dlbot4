@@ -5,7 +5,10 @@ import { fetch } from "bun";
 export async function getDescription(url: string) {
   try {
     const res = await fetch(url, {
-      headers: { "User-Agent": FAKE_USER_AGENT },
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; bingbot/2.0 +http://www.bing.com/bingbot.htm)",
+      },
       proxy: process.env.PROXY_URL,
     } as any);
     const html = await res.text();
