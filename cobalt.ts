@@ -115,6 +115,9 @@ export async function askCobalt(
       }
     );
     if (!response.ok) {
+      if (response.status === 400)
+        return CobaltResult.parse(await response.json());
+
       throw new Error(
         `Cobalt instance ${
           COBALT_INSTANCES[retryWith % COBALT_INSTANCES.length]
