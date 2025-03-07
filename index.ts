@@ -29,6 +29,12 @@ async function dumpBufferFromUrl(url: string) {
   );
   return media;
 }
+async function dumpStreamFromUrl(url: string) {
+  const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
+  if (!res.ok)
+    throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
+  return Readable.fromWeb(res.body as any);
+}
 
 class Bot {
   private bot: TelegramBot;
@@ -49,7 +55,7 @@ class Bot {
             { reply_to_message_id: msg.message_id }
           );
         })
-        .finally(() => Bun.gc(false));
+        .finally(() => Bun.gc(true));
     });
     this.bot.on("inline_query", async (query: TelegramBot.InlineQuery) => {
       try {
@@ -279,7 +285,7 @@ class Bot {
         if (cobaltResult.audio) {
           await this.bot.sendAudio(
             chatId,
-            await dumpBufferFromUrl(cobaltResult.audio),
+            await dumpStreamFromUrl(cobaltResult.audio),
             {
               reply_to_message_id: msg.message_id,
             }
@@ -287,7 +293,7 @@ class Bot {
         }
         const mediaItems: TelegramBot.InputMedia[] = await pAll(
           cobaltResult.picker.map((item) => async () => {
-            const media = (await dumpBufferFromUrl(item.url)) as any;
+            const media = (await dumpStreamFromUrl(item.url)) as any;
             if (item.type === "video")
               return { type: "video", media } as TelegramBot.InputMedia;
             if (item.type === "photo" || item.type === "gif")
