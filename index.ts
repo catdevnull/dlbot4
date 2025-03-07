@@ -8,6 +8,7 @@ import { askFxtwitter } from "./fxtwitter";
 import { nanoid } from "nanoid";
 import pAll from "p-all";
 import { USER_AGENT } from "./consts";
+import { sniff } from "./sniff";
 
 // https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#file-options-metadata
 process.env.NTBA_FIX_350 = "false";
@@ -334,6 +335,9 @@ class Bot {
     }
   ): Promise<void> {
     const downloadUrl = cobaltResult.url;
+
+    const sniffedRes = await sniff(downloadUrl);
+
     const res = await fetch(downloadUrl, {
       headers: { "User-Agent": USER_AGENT },
     });
@@ -346,6 +350,8 @@ class Bot {
         {
           reply_to_message_id: options.replyToMessageId,
           caption: cobaltResult.filename,
+          width: sniffedRes?.width,
+          height: sniffedRes?.height,
         },
         {
           filename: cobaltResult.filename,
