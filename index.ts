@@ -9,6 +9,7 @@ import { nanoid } from "nanoid";
 import pAll from "p-all";
 import { USER_AGENT } from "./consts";
 import { sniff } from "./sniff";
+import { getDescription } from "./metadata";
 
 // https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#file-options-metadata
 process.env.NTBA_FIX_350 = "false";
@@ -280,6 +281,7 @@ class Bot {
             }
           );
         }
+        const description = await getDescription(parsedUrl.href);
         const mediaItems: TelegramBot.InputMedia[] = await pAll(
           cobaltResult.picker.map((item) => async () => {
             const media = (await dumpStreamFromUrl(item.url)) as any;
@@ -295,6 +297,9 @@ class Bot {
         for (let i = 0; i < mediaItems.length; i += 10) {
           mediaGroups.push(mediaItems.slice(i, i + 10));
         }
+        await this.bot.sendMessage(chatId, description ?? "", {
+          reply_to_message_id: msg.message_id,
+        });
         for (let i = 0; i < Math.min(mediaGroups.length, 15); i++) {
           await this.bot.sendMediaGroup(chatId, mediaGroups[i], {
             reply_to_message_id: i === 0 ? msg.message_id : undefined,
@@ -329,11 +334,14 @@ class Bot {
       cobaltResult.filename.endsWith(".png") ||
       cobaltResult.filename.endsWith(".gif");
 
-    const sniffedRes = await sniff(downloadUrl);
+    const [sniffedRes, description, res] = await Promise.all([
+      sniff(downloadUrl),
+      getDescription(downloadUrl),
+      fetch(downloadUrl, {
+        headers: { "User-Agent": USER_AGENT },
+      }),
+    ]);
 
-    const res = await fetch(downloadUrl, {
-      headers: { "User-Agent": USER_AGENT },
-    });
     if (!res.ok)
       throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
     try {
@@ -342,7 +350,7 @@ class Bot {
         Readable.fromWeb(res.body as any),
         {
           reply_to_message_id: options.replyToMessageId,
-          caption: cobaltResult.filename,
+          caption: description ?? cobaltResult.filename,
           width: sniffedRes?.width,
           height: sniffedRes?.height,
         },
