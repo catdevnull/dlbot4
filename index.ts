@@ -297,9 +297,10 @@ class Bot {
         for (let i = 0; i < mediaItems.length; i += 10) {
           mediaGroups.push(mediaItems.slice(i, i + 10));
         }
-        await this.bot.sendMessage(chatId, description ?? "", {
-          reply_to_message_id: msg.message_id,
-        });
+        if (description)
+          await this.bot.sendMessage(chatId, description ?? "", {
+            reply_to_message_id: msg.message_id,
+          });
         for (let i = 0; i < Math.min(mediaGroups.length, 15); i++) {
           await this.bot.sendMediaGroup(chatId, mediaGroups[i], {
             reply_to_message_id: i === 0 ? msg.message_id : undefined,
