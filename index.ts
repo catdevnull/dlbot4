@@ -337,7 +337,7 @@ class Bot {
 
     const [sniffedRes, description, res] = await Promise.all([
       sniff(downloadUrl),
-      getDescription(downloadUrl),
+      getDescription(url),
       fetch(downloadUrl, {
         headers: { "User-Agent": USER_AGENT },
       }),
