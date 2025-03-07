@@ -336,6 +336,11 @@ class Bot {
   ): Promise<void> {
     const downloadUrl = cobaltResult.url;
 
+    const isImage =
+      cobaltResult.filename.endsWith(".jpg") ||
+      cobaltResult.filename.endsWith(".png") ||
+      cobaltResult.filename.endsWith(".gif");
+
     const sniffedRes = await sniff(downloadUrl);
 
     const res = await fetch(downloadUrl, {
@@ -344,7 +349,7 @@ class Bot {
     if (!res.ok)
       throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
     try {
-      await this.bot.sendVideo(
+      await this.bot[isImage ? "sendPhoto" : "sendVideo"](
         chatId,
         Readable.fromWeb(res.body as any),
         {
