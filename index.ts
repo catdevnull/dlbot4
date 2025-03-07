@@ -18,18 +18,6 @@ const botParams = {
   baseApiUrl: process.env.TELEGRAM_API_URL,
 };
 
-async function dumpBufferFromUrl(url: string) {
-  const media = Buffer.from(
-    await fetch(url, { headers: { "User-Agent": USER_AGENT } }).then((res) =>
-      res.ok
-        ? res.arrayBuffer()
-        : (() => {
-            throw new Error(`Failed to fetch media: ${res.status}`);
-          })()
-    )
-  );
-  return media;
-}
 async function dumpStreamFromUrl(url: string) {
   const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
   if (!res.ok)
