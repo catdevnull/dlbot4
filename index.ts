@@ -2,8 +2,8 @@ import TelegramBot, {
   type InlineQueryResult,
   type MessageEntity,
 } from "node-telegram-bot-api";
-import { Readable, type Stream } from "stream";
-import { askCobalt, CobaltResult, getRealUrl } from "./cobalt";
+import { Readable } from "node:stream";
+import { askCobalt, type CobaltResult, getRealUrl } from "./cobalt";
 import { askFxtwitter } from "./fxtwitter";
 import { nanoid } from "nanoid";
 import pAll from "p-all";
@@ -12,17 +12,18 @@ import { sniff } from "./sniff";
 import { getDescription } from "./metadata";
 
 // https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#file-options-metadata
-process.env.NTBA_FIX_350 = "false";
+process.env["NTBA_FIX_350"] = "false";
 
 const botParams = {
   polling: true,
-  baseApiUrl: process.env.TELEGRAM_API_URL,
+  baseApiUrl: process.env["TELEGRAM_API_URL"],
 };
 
 async function dumpStreamFromUrl(url: string) {
   const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
   if (!res.ok)
     throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
+  if (!res.body) throw new Error("No body");
   return Readable.fromWeb(res.body as any);
 }
 
@@ -41,7 +42,7 @@ class Bot {
           console.error("Error al manejar el mensaje:", error);
           this.bot.sendMessage(
             msg.chat.id,
-            `Hubo un error al manejar el mensaje.`,
+            "Hubo un error al manejar el mensaje.",
             { reply_to_message_id: msg.message_id }
           );
         })
@@ -79,7 +80,7 @@ class Bot {
             },
           ]);
         } else if (result.status === "picker") {
-          let results: InlineQueryResult[] = [];
+          const results: InlineQueryResult[] = [];
 
           if (result.audio) {
             results.push({
@@ -134,7 +135,7 @@ class Bot {
     if (!msg.text) return;
     const isExplicit =
       msg.text.startsWith("/dl") || msg.chat.type === "private";
-    let searchMsg =
+    const searchMsg =
       isExplicit && msg.reply_to_message ? msg.reply_to_message : msg;
     if (!searchMsg.text) return;
     const entities: (MessageEntity & { urlText?: string })[] =
@@ -164,7 +165,7 @@ class Bot {
       const urlText =
         entity.urlText ||
         searchMsg.text.slice(entity.offset, entity.offset + entity.length);
-      let parsedUrl;
+      let parsedUrl: URL;
       try {
         parsedUrl = new URL(urlText);
       } catch (error) {
@@ -357,7 +358,7 @@ class Bot {
         },
         {
           filename: cobaltResult.filename,
-          contentType: res.headers.get("Content-Type")!,
+          contentType: res.headers.get("Content-Type") ?? "",
         }
       );
     } catch (e) {
@@ -385,7 +386,7 @@ class Bot {
   }
 }
 
-const token = process.env.TELEGRAM_TOKEN;
+const token = process.env["TELEGRAM_TOKEN"];
 if (!token) {
   console.error("No hay token de Telegram");
   process.exit(1);

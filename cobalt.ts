@@ -1,10 +1,8 @@
 import { z } from "zod";
 import { USER_AGENT } from "./consts";
 
-type CobaltInstance = string;
-
 export const COBALT_INSTANCES = (() => {
-  const entries = process.env.COBALT_INSTANCES?.split(",") || [];
+  const entries = process.env["COBALT_INSTANCES"]?.split(",") || [];
 
   const urls = entries.map((url) => url.trim()).filter((url) => url.length > 0);
   if (urls.length === 0) {
@@ -25,12 +23,13 @@ const ALLOWED_DOMAINS = [
   "pin.it",
 ];
 export function getRealUrl(url: string): string | null {
-  url = url.replaceAll("ddinstagram", "instagram");
-  url = url.replaceAll("fixupx.com", "x.com");
-  url = url.replaceAll("fxtwitter.com", "x.com");
+  let realUrl = url;
+  realUrl = realUrl.replaceAll("ddinstagram", "instagram");
+  realUrl = realUrl.replaceAll("fixupx.com", "x.com");
+  realUrl = realUrl.replaceAll("fxtwitter.com", "x.com");
 
   try {
-    const urlObj = new URL(url);
+    const urlObj = new URL(realUrl);
     if (
       !ALLOWED_DOMAINS.some(
         (domain) =>
@@ -40,7 +39,7 @@ export function getRealUrl(url: string): string | null {
       )
     )
       return null;
-    return url;
+    return realUrl;
   } catch {
     return null;
   }
@@ -94,9 +93,9 @@ export async function askCobalt(
   options?: {
     videoQuality?: VideoQuality;
   },
-  retryWith?: number
+  retryWithP?: number
 ) {
-  retryWith ??= 0;
+  const retryWith = retryWithP ?? 0;
 
   try {
     const controller = new AbortController();

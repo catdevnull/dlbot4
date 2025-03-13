@@ -56,12 +56,11 @@ export async function sniff(url: string) {
     const videoStreamMatch = output.match(/Stream #.*Video:.*, (\d+)x(\d+)/);
 
     if (videoStreamMatch) {
-      const width = parseInt(videoStreamMatch[1], 10);
-      const height = parseInt(videoStreamMatch[2], 10);
+      const width = Number.parseInt(videoStreamMatch[1], 10);
+      const height = Number.parseInt(videoStreamMatch[2], 10);
       return { width, height };
-    } else {
-      return null;
     }
+    return null;
   } catch {
     return null;
   }
