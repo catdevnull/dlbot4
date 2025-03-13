@@ -6,8 +6,8 @@
     "start": "bun run --smol ."
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@types/bun": "latest",
-    "@types/node": "^22.7.4",
     "@types/node-telegram-bot-api": "^0.64.7"
   },
   "peerDependencies": {
