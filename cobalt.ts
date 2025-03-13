@@ -6,7 +6,7 @@ export const COBALT_INSTANCES = (() => {
 
   const urls = entries.map((url) => url.trim()).filter((url) => url.length > 0);
   if (urls.length === 0) {
-    return ["https://cobalt.izq.nulo.in/"];
+    return ["https://cobalt.izq.nulo.in"];
   }
   return urls;
 })();

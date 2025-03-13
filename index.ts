@@ -37,16 +37,14 @@ class Bot {
     });
 
     this.bot.on("message", (msg: TelegramBot.Message) => {
-      this.handleMessage(msg)
-        .catch((error: Error) => {
-          console.error("Error al manejar el mensaje:", error);
-          this.bot.sendMessage(
-            msg.chat.id,
-            "Hubo un error al manejar el mensaje.",
-            { reply_to_message_id: msg.message_id }
-          );
-        })
-        .finally(() => Bun.gc(true));
+      this.handleMessage(msg).catch((error: Error) => {
+        console.error("Error al manejar el mensaje:", error);
+        this.bot.sendMessage(
+          msg.chat.id,
+          "Hubo un error al manejar el mensaje.",
+          { reply_to_message_id: msg.message_id }
+        );
+      });
     });
     this.bot.on("inline_query", async (query: TelegramBot.InlineQuery) => {
       try {
@@ -381,7 +379,6 @@ class Bot {
       console.error(`Error al enviar el video ${downloadUrl}:`, e);
       throw e;
     } finally {
-      Bun.gc(true);
     }
   }
 }
