@@ -1,5 +1,11 @@
-import { $ } from "bun";
+import { execFile } from "node:child_process";
+import { writeFile, unlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
 import { USER_AGENT } from "./consts";
+
+const execFileAsync = promisify(execFile);
 
 export async function sniff(url: string) {
   try {
@@ -50,17 +56,27 @@ export async function sniff(url: string) {
       offset += chunk.length;
     }
 
-    const result = await $`ffmpeg -i - -f null - < ${concatenated}`;
+    const tempFile = join(tmpdir(), `ffmpeg-input-${Date.now()}.tmp`);
 
-    const output = result.stderr.toString();
-    const videoStreamMatch = output.match(/Stream #.*Video:.*, (\d+)x(\d+)/);
+    try {
+      await writeFile(tempFile, concatenated);
+      const { stderr: output } = await execFileAsync(
+        "ffmpeg",
+        ["-i", tempFile, "-f", "null", "-"],
+        { encoding: "utf8" }
+      );
 
-    if (videoStreamMatch) {
-      const width = Number.parseInt(videoStreamMatch[1], 10);
-      const height = Number.parseInt(videoStreamMatch[2], 10);
-      return { width, height };
+      const videoStreamMatch = output.match(/Stream #.*Video:.*, (\d+)x(\d+)/);
+
+      if (videoStreamMatch) {
+        const width = Number.parseInt(videoStreamMatch[1], 10);
+        const height = Number.parseInt(videoStreamMatch[2], 10);
+        return { width, height };
+      }
+      return null;
+    } finally {
+      await unlink(tempFile).catch(() => {});
     }
-    return null;
   } catch {
     return null;
   }

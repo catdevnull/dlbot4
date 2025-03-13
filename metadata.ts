@@ -1,16 +1,21 @@
 import * as cheerio from "cheerio";
-import { FAKE_USER_AGENT } from "./consts";
-import { fetch } from "bun";
+import { fetch, ProxyAgent } from "undici";
+
+const PROXY_URL = process.env["PROXY_URL"];
 
 export async function getDescription(url: string) {
+  let client: ProxyAgent | undefined;
+  if (PROXY_URL) {
+    client = new ProxyAgent(PROXY_URL);
+  }
   try {
     const res = await fetch(url, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (compatible; bingbot/2.0 +http://www.bing.com/bingbot.htm)",
       },
-      proxy: process.env.PROXY_URL,
-    } as any);
+      dispatcher: client,
+    });
     const html = await res.text();
     const $ = cheerio.load(html);
     return $("meta[name='description']").attr("content") || null;
