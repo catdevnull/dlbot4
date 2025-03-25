@@ -11,6 +11,8 @@ export const COBALT_INSTANCES = (() => {
   return urls;
 })();
 
+console.info(`Using cobalt instances: ${COBALT_INSTANCES.join(", ")}`);
+
 // List of allowed domains for video downloads
 const ALLOWED_DOMAINS = [
   "tiktok.com",
