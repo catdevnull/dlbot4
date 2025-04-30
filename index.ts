@@ -27,6 +27,23 @@ async function dumpStreamFromUrl(url: string) {
   return Readable.fromWeb(res.body as any);
 }
 
+// Utility to split a string into chunks of up to maxLen, without breaking words
+function splitCaption(caption: string, maxLen = 1024): string[] {
+  if (caption.length <= maxLen) return [caption];
+  const result: string[] = [];
+  let current = "";
+  for (const word of caption.split(/(\s+)/)) {
+    if (current.length + word.length > maxLen) {
+      if (current.length > 0) result.push(current);
+      current = word.trimStart();
+    } else {
+      current += word;
+    }
+  }
+  if (current.length > 0) result.push(current);
+  return result;
+}
+
 class Bot {
   private bot: TelegramBot;
   private inlineQueryIdCache: Map<string, string> = new Map();
@@ -296,10 +313,17 @@ class Bot {
         for (let i = 0; i < mediaItems.length; i += 10) {
           mediaGroups.push(mediaItems.slice(i, i + 10));
         }
-        if (description)
-          await this.bot.sendMessage(chatId, description ?? "", {
+        if (description) {
+          const splitDescription = splitCaption(description, 1024);
+          await this.bot.sendMessage(chatId, splitDescription[0], {
             reply_to_message_id: msg.message_id,
           });
+          for (let i = 1; i < splitDescription.length; i++) {
+            await this.bot.sendMessage(chatId, splitDescription[i], {
+              reply_to_message_id: msg.message_id,
+            });
+          }
+        }
         for (let i = 0; i < Math.min(mediaGroups.length, 15); i++) {
           await this.bot.sendMediaGroup(chatId, mediaGroups[i], {
             reply_to_message_id: i === 0 ? msg.message_id : undefined,
@@ -345,12 +369,15 @@ class Bot {
     if (!res.ok)
       throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
     try {
+      // Split caption if too long
+      const captions = splitCaption(description ?? cobaltResult.filename, 1024);
+      // Send the first chunk as caption, the rest as follow-up messages
       await this.bot[isImage ? "sendPhoto" : "sendVideo"](
         chatId,
         Readable.fromWeb(res.body as any),
         {
           reply_to_message_id: options.replyToMessageId,
-          caption: description ?? cobaltResult.filename,
+          caption: captions[0],
           width: sniffedRes?.width,
           height: sniffedRes?.height,
         },
@@ -359,6 +386,12 @@ class Bot {
           contentType: res.headers.get("Content-Type") ?? "",
         }
       );
+      // Send any remaining caption chunks as follow-up messages
+      for (let i = 1; i < captions.length; i++) {
+        await this.bot.sendMessage(chatId, captions[i], {
+          reply_to_message_id: options.replyToMessageId,
+        });
+      }
     } catch (e) {
       if (!options.alreadyLowQuality) {
         console.log("retrying with low quality video");
