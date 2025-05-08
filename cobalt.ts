@@ -11,6 +11,10 @@ export const COBALT_INSTANCES = (() => {
   return urls;
 })();
 
+export const COBALT_TIMEOUT = process.env["COBALT_TIMEOUT"]
+  ? Number.parseInt(process.env["COBALT_TIMEOUT"])
+  : 10000;
+
 console.info(`Using cobalt instances: ${COBALT_INSTANCES.join(", ")}`);
 
 // List of allowed domains for video downloads
@@ -98,23 +102,21 @@ export async function askCobalt(
   retryWithP?: number
 ) {
   const retryWith = retryWithP ?? 0;
-
+  const cobaltUrl = `${COBALT_INSTANCES[retryWith % COBALT_INSTANCES.length]}/`;
+  const body = { url, ...options, alwaysProxy: true };
   try {
     const controller = new AbortController();
-    setTimeout(() => controller.abort(), 10000);
-    const response = await fetch(
-      `${COBALT_INSTANCES[retryWith % COBALT_INSTANCES.length]}/`,
-      {
-        method: "POST",
-        body: JSON.stringify({ url, ...options, alwaysProxy: true }),
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "User-Agent": USER_AGENT,
-        },
-        signal: controller.signal,
-      }
-    );
+    setTimeout(() => controller.abort(), COBALT_TIMEOUT);
+    const response = await fetch(cobaltUrl, {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "User-Agent": USER_AGENT,
+      },
+      signal: controller.signal,
+    });
     if (!response.ok) {
       if (response.status === 400)
         return CobaltResult.parse(await response.json());
@@ -129,6 +131,9 @@ export async function askCobalt(
 
     return CobaltResult.parse(data);
   } catch (error) {
+    console.log(
+      `Error while fetching ${cobaltUrl} with body ${JSON.stringify(body)}`
+    );
     if (retryWith < COBALT_INSTANCES.length - 1) {
       console.warn(error, `, retrying with ${COBALT_INSTANCES[retryWith + 1]}`);
       return askCobalt(url, options, retryWith + 1);
