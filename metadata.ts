@@ -22,8 +22,12 @@ export async function getDescription(url: string) {
       "-s",
       ...proxyArgs,
       ...userAgentArgs,
-      url,
-    ]);
+        url,
+      ],
+      {
+        maxBuffer: 1024 * 1024 * 10,
+      }
+    );
 
     const $ = cheerio.load(html.stdout);
     return $("meta[name='description']").attr("content") || null;
