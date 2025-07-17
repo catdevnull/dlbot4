@@ -19,12 +19,41 @@ const botParams = {
   baseApiUrl: process.env["TELEGRAM_API_URL"],
 };
 
-async function dumpStreamFromUrl(url: string) {
-  const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
-  if (!res.ok)
-    throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
-  if (!res.body) throw new Error("No body");
-  return Readable.fromWeb(res.body as any);
+async function dumpStreamFromUrl(url: string, maxRetries = 3) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const res = await fetch(url, { 
+        headers: { 
+          "User-Agent": USER_AGENT,
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate, br"
+        } 
+      });
+      
+      if (!res.ok) {
+        if (attempt < maxRetries - 1 && (res.status === 429 || res.status >= 500)) {
+          // Retry on rate limit or server errors
+          const delay = 1000 * Math.pow(2, attempt);
+          console.log(`Download failed with ${res.status}, retrying in ${delay}ms (attempt ${attempt + 2}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
+      }
+      
+      if (!res.body) throw new Error("No body");
+      return Readable.fromWeb(res.body as any);
+    } catch (error) {
+      if (attempt < maxRetries - 1) {
+        const delay = 1000 * Math.pow(2, attempt);
+        console.log(`Download error: ${error}, retrying in ${delay}ms (attempt ${attempt + 2}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Max retries exceeded for media download");
 }
 
 // Utility to split a string into chunks of up to maxLen, without breaking words
