@@ -6,7 +6,7 @@ export const COBALT_INSTANCES = (() => {
 
   const urls = entries.map((url) => url.trim()).filter((url) => url.length > 0);
   if (urls.length === 0) {
-    return ["https://cobalt.izq.nulo.in"];
+    return ["https://cobalt-production-68d3.up.railway.app"];
   }
   return urls;
 })();
@@ -106,10 +106,10 @@ export async function askCobalt(
   const retryWith = retryWithP ?? 0;
   const cobaltUrl = `${COBALT_INSTANCES[retryWith % COBALT_INSTANCES.length]}/`;
   const body = { url, ...options, alwaysProxy: true };
-  
+
   const isTikTok = url.includes("tiktok.com") || url.includes("tiktok");
   const maxAttempts = isTikTok ? maxRetries : 1;
-  
+
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const controller = new AbortController();
@@ -124,7 +124,7 @@ export async function askCobalt(
         },
         signal: controller.signal,
       });
-      
+
       if (!response.ok) {
         if (response.status === 400)
           return CobaltResult.parse(await response.json());
@@ -135,10 +135,10 @@ export async function askCobalt(
           } threw an error: ${response.status} (${await response.text()})`
         );
       }
-      
+
       const data = await response.json();
       const result = CobaltResult.parse(data);
-      
+
       // For TikTok, check if we got a valid result
       if (isTikTok && result.status === "error") {
         const errorCode = result.error.code;
@@ -147,38 +147,57 @@ export async function askCobalt(
           "error.api.fetch.empty",
           "error.api.fetch.timeout",
           "error.api.fetch.server_error",
-          "error.api.fetch.forbidden"
+          "error.api.fetch.forbidden",
         ];
-        
-        if (retryableErrors.some(error => errorCode.includes(error)) && attempt < maxAttempts - 1) {
-          console.log(`TikTok download failed with ${errorCode}, retrying (attempt ${attempt + 2}/${maxAttempts})`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+
+        if (
+          retryableErrors.some((error) => errorCode.includes(error)) &&
+          attempt < maxAttempts - 1
+        ) {
+          console.log(
+            `TikTok download failed with ${errorCode}, retrying (attempt ${
+              attempt + 2
+            }/${maxAttempts})`
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * (attempt + 1))
+          ); // Exponential backoff
           continue;
         }
       }
-      
+
       return result;
     } catch (error) {
       console.log(
-        `Error while fetching ${cobaltUrl} with body ${JSON.stringify(body)} (attempt ${attempt + 1}/${maxAttempts})`
+        `Error while fetching ${cobaltUrl} with body ${JSON.stringify(
+          body
+        )} (attempt ${attempt + 1}/${maxAttempts})`
       );
-      
+
       // If this is the last attempt for this instance, try next instance
-      if (attempt === maxAttempts - 1 && retryWith < COBALT_INSTANCES.length - 1) {
-        console.warn(error, `, retrying with ${COBALT_INSTANCES[retryWith + 1]}`);
+      if (
+        attempt === maxAttempts - 1 &&
+        retryWith < COBALT_INSTANCES.length - 1
+      ) {
+        console.warn(
+          error,
+          `, retrying with ${COBALT_INSTANCES[retryWith + 1]}`
+        );
         return askCobalt(url, options, retryWith + 1, 0);
       }
-      
+
       // If we have more attempts left for this instance, continue
       if (attempt < maxAttempts - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * (attempt + 1))
+        ); // Exponential backoff
         continue;
       }
-      
+
       // If we've exhausted all retries for all instances, throw the error
       throw error;
     }
   }
-  
+
   throw new Error("Max retries exceeded");
 }

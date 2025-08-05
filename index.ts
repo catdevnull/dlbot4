@@ -6,69 +6,91 @@ import { Readable } from "node:stream";
 import { askCobalt, type CobaltResult, getRealUrl } from "./cobalt";
 import { askFxtwitter } from "./fxtwitter";
 import { nanoid } from "nanoid";
-import pAll from "p-all";
 import { USER_AGENT } from "./consts";
 import { sniff } from "./sniff";
 import { getDescription } from "./metadata";
+import { Effect, Data, Schedule } from "effect";
 
 // https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#file-options-metadata
 process.env["NTBA_FIX_350"] = "false";
+
+// ------------------------------
+// Effect Error Models
+// ------------------------------
+
+class MediaFetchError extends Data.TaggedError("MediaFetchError")<{
+  readonly url: string;
+  readonly status?: number;
+  readonly statusText?: string;
+}> {}
+
+class MediaDownloadError extends Data.TaggedError("MediaDownloadError")<{
+  readonly url: string;
+  readonly attempt: number;
+  readonly maxRetries: number;
+}> {}
+
+class MediaSendError extends Data.TaggedError("MediaSendError")<{
+  readonly chatId: number;
+  readonly isRetry?: boolean;
+}> {}
 
 const botParams = {
   polling: true,
   baseApiUrl: process.env["TELEGRAM_API_URL"],
 };
 
-async function dumpStreamFromUrl(url: string, maxRetries = 3) {
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const res = await fetch(url, {
+// ------------------------------
+// Effect-based Helper Functions
+// ------------------------------
+
+const fetchMediaStream = (url: string) =>
+  Effect.tryPromise({
+    try: () =>
+      fetch(url, {
         headers: {
           "User-Agent": USER_AGENT,
           Accept: "*/*",
           "Accept-Encoding": "gzip, deflate, br",
         },
-      });
-
+      }),
+    catch: () => new MediaFetchError({ url }),
+  }).pipe(
+    Effect.flatMap((res) => {
       if (!res.ok) {
-        if (
-          attempt < maxRetries - 1 &&
-          (res.status === 429 || res.status >= 500)
-        ) {
-          // Retry on rate limit or server errors
-          const delay = 1000 * 2 ** attempt;
-          console.log(
-            `Download failed with ${
-              res.status
-            }, retrying in ${delay}ms (attempt ${attempt + 2}/${maxRetries})`
-          );
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          continue;
-        }
-        throw new Error(
-          `Failed to fetch media: ${res.status} ${res.statusText}`
+        return Effect.fail(
+          new MediaFetchError({
+            url,
+            status: res.status,
+            statusText: res.statusText,
+          })
         );
       }
-
-      if (!res.body) throw new Error("No body");
+      if (!res.body) {
+        return Effect.fail(new MediaFetchError({ url }));
+      }
       // biome-ignore lint/suspicious/noExplicitAny: it works
-      return Readable.fromWeb(res.body as any);
-    } catch (error) {
-      if (attempt < maxRetries - 1) {
-        const delay = 1000 * 2 ** attempt;
-        console.log(
-          `Download error: ${error}, retrying in ${delay}ms (attempt ${
-            attempt + 2
-          }/${maxRetries})`
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        continue;
-      }
-      throw error;
-    }
-  }
-  throw new Error("Max retries exceeded for media download");
-}
+      return Effect.succeed(Readable.fromWeb(res.body as any));
+    })
+  );
+
+const dumpStreamFromUrl = (url: string, maxRetries = 3) =>
+  fetchMediaStream(url).pipe(
+    Effect.retry(
+      Schedule.exponential("1 seconds").pipe(
+        Schedule.intersect(Schedule.recurs(maxRetries - 1))
+      )
+    ),
+    Effect.catchAll(() =>
+      Effect.fail(
+        new MediaDownloadError({
+          url,
+          attempt: maxRetries,
+          maxRetries,
+        })
+      )
+    )
+  );
 
 // Utility to split a string into chunks of up to maxLen, without breaking words
 function splitCaption(caption: string, maxLen = 1024): string[] {
@@ -331,6 +353,7 @@ class Bot {
         cobaltResult.status === "redirect"
       ) {
         this.bot.sendChatAction(chatId, "upload_video");
+        // Using the Effect-enhanced sendSingular with ultrathink patterns
         await this.sendSingular(chatId, parsedUrl.href, cobaltResult, {
           replyToMessageId: msg.message_id,
         });
@@ -338,27 +361,37 @@ class Bot {
       } else if (cobaltResult.status === "picker") {
         this.bot.sendChatAction(chatId, "upload_photo");
         if (cobaltResult.audio) {
-          await this.bot.sendAudio(
-            chatId,
-            await dumpStreamFromUrl(cobaltResult.audio),
-            {
-              reply_to_message_id: msg.message_id,
-            }
+          const audioStream = await Effect.runPromise(
+            dumpStreamFromUrl(cobaltResult.audio)
           );
+          await this.bot.sendAudio(chatId, audioStream, {
+            reply_to_message_id: msg.message_id,
+          });
         }
         const description = await getDescription(parsedUrl.href);
-        const mediaItems: TelegramBot.InputMedia[] = await pAll(
-          cobaltResult.picker.map((item) => async () => {
-            // biome-ignore lint/suspicious/noExplicitAny: it works
-            const media = (await dumpStreamFromUrl(item.url)) as any;
-            if (item.type === "video")
-              return { type: "video", media } as TelegramBot.InputMedia;
-            if (item.type === "photo" || item.type === "gif")
-              return { type: "photo", media } as TelegramBot.InputMedia;
-            throw new Error(`Unsupported media type: ${item.type}`);
-          }),
-          { concurrency: 4 }
-        );
+        const processMediaItems = Effect.gen(function* () {
+          const effects = cobaltResult.picker.map((item) =>
+            Effect.gen(function* () {
+              const media = yield* dumpStreamFromUrl(item.url);
+              if (item.type === "video")
+                return {
+                  type: "video",
+                  // biome-ignore lint/suspicious/noExplicitAny: it supports readables
+                  media: media as any,
+                } as TelegramBot.InputMedia;
+              if (item.type === "photo" || item.type === "gif")
+                return {
+                  type: "photo",
+                  // biome-ignore lint/suspicious/noExplicitAny: it supports readables
+                  media: media as any,
+                } as TelegramBot.InputMedia;
+              throw new Error(`Unsupported media type: ${item.type}`);
+            })
+          );
+          return yield* Effect.all(effects, { concurrency: 4 });
+        });
+
+        const mediaItems = await Effect.runPromise(processMediaItems);
         const mediaGroups: TelegramBot.InputMedia[][] = [];
         for (let i = 0; i < mediaItems.length; i += 10) {
           mediaGroups.push(mediaItems.slice(i, i + 10));
@@ -374,11 +407,26 @@ class Bot {
             });
           }
         }
-        for (let i = 0; i < Math.min(mediaGroups.length, 15); i++) {
-          await this.bot.sendMediaGroup(chatId, mediaGroups[i], {
-            reply_to_message_id: i === 0 ? msg.message_id : undefined,
-          });
-        }
+        // Use Effect.forEach for controlled concurrency and better error handling
+        const bot = this.bot;
+        const sendMediaGroupsEffect = Effect.gen(function* () {
+          const limitedGroups = mediaGroups.slice(0, 15);
+          yield* Effect.forEach(
+            limitedGroups,
+            (mediaGroup, index) =>
+              Effect.tryPromise({
+                try: () =>
+                  bot.sendMediaGroup(chatId, mediaGroup, {
+                    reply_to_message_id:
+                      index === 0 ? msg.message_id : undefined,
+                  }),
+                catch: () => new MediaSendError({ chatId }),
+              }),
+            { concurrency: 2 } // Controlled concurrency
+          );
+        });
+
+        await Effect.runPromise(sendMediaGroupsEffect);
         hasDownloadables = true;
       }
     }
