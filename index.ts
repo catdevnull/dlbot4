@@ -22,32 +22,46 @@ const botParams = {
 async function dumpStreamFromUrl(url: string, maxRetries = 3) {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const res = await fetch(url, { 
-        headers: { 
+      const res = await fetch(url, {
+        headers: {
           "User-Agent": USER_AGENT,
-          "Accept": "*/*",
-          "Accept-Encoding": "gzip, deflate, br"
-        } 
+          Accept: "*/*",
+          "Accept-Encoding": "gzip, deflate, br",
+        },
       });
-      
+
       if (!res.ok) {
-        if (attempt < maxRetries - 1 && (res.status === 429 || res.status >= 500)) {
+        if (
+          attempt < maxRetries - 1 &&
+          (res.status === 429 || res.status >= 500)
+        ) {
           // Retry on rate limit or server errors
-          const delay = 1000 * Math.pow(2, attempt);
-          console.log(`Download failed with ${res.status}, retrying in ${delay}ms (attempt ${attempt + 2}/${maxRetries})`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          const delay = 1000 * 2 ** attempt;
+          console.log(
+            `Download failed with ${
+              res.status
+            }, retrying in ${delay}ms (attempt ${attempt + 2}/${maxRetries})`
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
         }
-        throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
+        throw new Error(
+          `Failed to fetch media: ${res.status} ${res.statusText}`
+        );
       }
-      
+
       if (!res.body) throw new Error("No body");
+      // biome-ignore lint/suspicious/noExplicitAny: it works
       return Readable.fromWeb(res.body as any);
     } catch (error) {
       if (attempt < maxRetries - 1) {
-        const delay = 1000 * Math.pow(2, attempt);
-        console.log(`Download error: ${error}, retrying in ${delay}ms (attempt ${attempt + 2}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        const delay = 1000 * 2 ** attempt;
+        console.log(
+          `Download error: ${error}, retrying in ${delay}ms (attempt ${
+            attempt + 2
+          }/${maxRetries})`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
       throw error;
@@ -92,6 +106,20 @@ class Bot {
         );
       });
     });
+
+    this.bot.on("callback_query", async (query: TelegramBot.CallbackQuery) => {
+      try {
+        if (query.data?.startsWith("twitter_full:")) {
+          const [, screenName, tweetId] = query.data.split(":");
+          if (screenName && tweetId) {
+            await this.handleTwitterFullContent(query, screenName, tweetId);
+          }
+        }
+      } catch (error) {
+        console.error("Error handling callback query:", error);
+      }
+    });
+
     this.bot.on("inline_query", async (query: TelegramBot.InlineQuery) => {
       try {
         if (query.query.trim() === "") {
@@ -253,32 +281,24 @@ class Bot {
           if (statusIndex !== -1 && statusIndex + 1 < pathParts.length) {
             const screenName = pathParts[1];
             const tweetId = pathParts[statusIndex + 1];
-            const fxResult = await askFxtwitter(screenName, tweetId);
             hasDownloadables = true;
             await this.bot.sendMessage(
               chatId,
-              `${fxResult.tweet.author.name} (@${
-                fxResult.tweet.author.screen_name
-              }):\n<blockquote>${fxResult.tweet.text}${
-                fxResult.tweet.quote
-                  ? `</blockquote>\nQuoting: ${fxResult.tweet.quote.author.name} (@${fxResult.tweet.quote.author.screen_name}):\n<blockquote>${fxResult.tweet.quote.text}`
-                  : ""
-              }</blockquote>\nhttps://fxtwitter.com/${screenName}/status/${tweetId}`,
-              { reply_to_message_id: msg.message_id, parse_mode: "HTML" }
+              `https://fxtwitter.com/${screenName}/status/${tweetId}`,
+              {
+                reply_to_message_id: msg.message_id,
+                reply_markup: {
+                  inline_keyboard: [
+                    [
+                      {
+                        text: "Show full content & media",
+                        callback_data: `twitter_full:${screenName}:${tweetId}`,
+                      },
+                    ],
+                  ],
+                },
+              }
             );
-            if (fxResult.tweet.media?.all?.length) {
-              await this.bot.sendMediaGroup(
-                chatId,
-                fxResult.tweet.media?.all?.map((media) => ({
-                  type: media.type === "gif" ? "photo" : media.type,
-                  media: media.url,
-                  thumb: media.thumbnail_url,
-                })) ?? [],
-                {
-                  reply_to_message_id: msg.message_id,
-                }
-              );
-            }
             continue;
           }
         } catch (error) {
@@ -329,6 +349,7 @@ class Bot {
         const description = await getDescription(parsedUrl.href);
         const mediaItems: TelegramBot.InputMedia[] = await pAll(
           cobaltResult.picker.map((item) => async () => {
+            // biome-ignore lint/suspicious/noExplicitAny: it works
             const media = (await dumpStreamFromUrl(item.url)) as any;
             if (item.type === "video")
               return { type: "video", media } as TelegramBot.InputMedia;
@@ -371,6 +392,67 @@ class Bot {
     }
   }
 
+  async handleTwitterFullContent(
+    query: TelegramBot.CallbackQuery,
+    screenName: string,
+    tweetId: string
+  ): Promise<void> {
+    if (!query.message) return;
+
+    const chatId = query.message.chat.id;
+
+    try {
+      // Answer the callback query to remove loading state
+      await this.bot.answerCallbackQuery(query.id);
+
+      // Remove the inline keyboard to prevent double-clicking
+      await this.bot.editMessageReplyMarkup(
+        { inline_keyboard: [] },
+        { chat_id: chatId, message_id: query.message.message_id }
+      );
+
+      // Fetch the full tweet content
+      const fxResult = await askFxtwitter(screenName, tweetId);
+
+      // Send the full tweet content
+      await this.bot.sendMessage(
+        chatId,
+        `${fxResult.tweet.author.name} (@${
+          fxResult.tweet.author.screen_name
+        }):\n<blockquote>${fxResult.tweet.text}${
+          fxResult.tweet.quote
+            ? `</blockquote>\nQuoting: ${fxResult.tweet.quote.author.name} (@${fxResult.tweet.quote.author.screen_name}):\n<blockquote>${fxResult.tweet.quote.text}`
+            : ""
+        }</blockquote>`,
+        {
+          reply_to_message_id: query.message.message_id,
+          parse_mode: "HTML",
+        }
+      );
+
+      // Send media if available
+      if (fxResult.tweet.media?.all?.length) {
+        await this.bot.sendMediaGroup(
+          chatId,
+          fxResult.tweet.media?.all?.map((media) => ({
+            type: media.type === "gif" ? "photo" : media.type,
+            media: media.url,
+            thumb: media.thumbnail_url,
+          })) ?? [],
+          {
+            reply_to_message_id: query.message.message_id,
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Error handling Twitter full content:", error);
+      await this.bot.answerCallbackQuery(query.id, {
+        text: "Error loading full content",
+        show_alert: true,
+      });
+    }
+  }
+
   async sendSingular(
     chatId: number,
     url: string,
@@ -403,6 +485,7 @@ class Bot {
       // Send the first chunk as caption, the rest as follow-up messages
       await this.bot[isImage ? "sendPhoto" : "sendVideo"](
         chatId,
+        // biome-ignore lint/suspicious/noExplicitAny: it works
         Readable.fromWeb(res.body as any),
         {
           reply_to_message_id: options.replyToMessageId,
