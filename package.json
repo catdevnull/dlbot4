@@ -1,27 +1,27 @@
 {
-  "name": "js",
-  "module": "index.ts",
-  "type": "module",
-  "scripts": {
-    "start": "tsx .",
-    "dev": "bun run --watch index.ts",
-    "format": "biome format --write"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "1.9.4",
-    "@types/bun": "latest",
-    "@types/node-telegram-bot-api": "^0.64.7"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "cheerio": "^1.0.0",
-    "effect": "^3.17.6",
-    "nanoid": "^5.0.9",
-    "node-telegram-bot-api": "^0.66.0",
-    "p-all": "^5.0.0",
-    "tsx": "^4.19.3",
-    "zod": "^3.23.8"
-  }
+	"name": "js",
+	"module": "index.ts",
+	"type": "module",
+	"scripts": {
+		"start": "tsx .",
+		"dev": "bun run --watch index.ts",
+		"format": "biome format --write"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@types/bun": "latest",
+		"@types/node-telegram-bot-api": "^0.64.7"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"dependencies": {
+		"cheerio": "^1.0.0",
+		"effect": "^3.17.6",
+		"nanoid": "^5.0.9",
+		"node-telegram-bot-api": "^0.66.0",
+		"p-all": "^5.0.0",
+		"tsx": "^4.19.3",
+		"zod": "^3.23.8"
+	}
 }
