@@ -18,18 +18,27 @@ export async function getDescription(url: string) {
     }
 
     const userAgentArgs = ["-A", userAgent];
-    const html = await execFileAsync("curl", [
-      "-s",
-      ...proxyArgs,
-      ...userAgentArgs,
-        url,
-      ],
+    const html = await execFileAsync(
+      "curl",
+      ["-s", ...proxyArgs, ...userAgentArgs, url],
       {
         maxBuffer: 1024 * 1024 * 10,
       }
     );
 
     const $ = cheerio.load(html.stdout);
+
+    // For Instagram, extract the caption from og:title since the description
+    // meta tag contains AI-generated summaries instead of the actual caption
+    if (url.includes("instagram.com")) {
+      const ogTitle = $("meta[property='og:title']").attr("content");
+      // og:title format: "Username on Instagram: \"caption\""
+      const match = ogTitle?.match(/on Instagram: "(.*)"/);
+      if (match) {
+        return match[1] || null;
+      }
+    }
+
     return $("meta[name='description']").attr("content") || null;
   } catch (e) {
     console.warn(`Failed to get description for ${url}:`, e);
