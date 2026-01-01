@@ -13,8 +13,7 @@ export async function getDescription(url: string) {
     let userAgent =
       "Mozilla/5.0 (compatible; bingbot/2.0 +http://www.bing.com/bingbot.htm)";
     if (url.includes("tiktok.com")) {
-      userAgent =
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 8_1 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 Mobile/12B411 Safari/600.1.4 (compatible; YandexBot/3.0; +http://yandex.com/bots)";
+      userAgent = "facebookexternalhit/1.1";
     }
 
     const userAgentArgs = ["-A", userAgent];
@@ -37,6 +36,11 @@ export async function getDescription(url: string) {
       if (match) {
         return match[1] || null;
       }
+    }
+
+    // For TikTok, extract from og:description since there's no standard description meta tag
+    if (url.includes("tiktok.com")) {
+      return $("meta[property='og:description']").attr("content") || null;
     }
 
     return $("meta[name='description']").attr("content") || null;
