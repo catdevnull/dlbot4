@@ -115,7 +115,7 @@ class Bot {
   constructor(token: string) {
     this.bot = new TelegramBot(token, botParams);
     this.bot.getMe().then((me) => {
-      console.log("Bot initialized as", me.username);
+      console.log("Bot initialized as", `https://t.me/${me.username}`);
     });
 
     this.bot.on("message", (msg: TelegramBot.Message) => {
