@@ -63,7 +63,7 @@ const fetchMediaStream = (url: string) =>
             url,
             status: res.status,
             statusText: res.statusText,
-          })
+          }),
         );
       }
       if (!res.body) {
@@ -71,15 +71,15 @@ const fetchMediaStream = (url: string) =>
       }
       // biome-ignore lint/suspicious/noExplicitAny: it works
       return Effect.succeed(Readable.fromWeb(res.body as any));
-    })
+    }),
   );
 
 const dumpStreamFromUrl = (url: string, maxRetries = 3) =>
   fetchMediaStream(url).pipe(
     Effect.retry(
       Schedule.exponential("1 seconds").pipe(
-        Schedule.intersect(Schedule.recurs(maxRetries - 1))
-      )
+        Schedule.intersect(Schedule.recurs(maxRetries - 1)),
+      ),
     ),
     Effect.catchAll(() =>
       Effect.fail(
@@ -87,9 +87,9 @@ const dumpStreamFromUrl = (url: string, maxRetries = 3) =>
           url,
           attempt: maxRetries,
           maxRetries,
-        })
-      )
-    )
+        }),
+      ),
+    ),
   );
 
 // Utility to split a string into chunks of up to maxLen, without breaking words
@@ -124,7 +124,7 @@ class Bot {
         this.bot.sendMessage(
           msg.chat.id,
           "Hubo un error al manejar el mensaje.",
-          { reply_to_message_id: msg.message_id }
+          { reply_to_message_id: msg.message_id },
         );
       });
     });
@@ -279,7 +279,7 @@ class Bot {
           await this.bot.sendMessage(
             chatId,
             `Lo siento, pero no puedo descargar de ${parsedUrl.hostname}. Solo soporto TikTok, Instagram, Twitter/X y YouTube.`,
-            { reply_to_message_id: msg.message_id }
+            { reply_to_message_id: msg.message_id },
           );
           hasDownloadables = true;
         }
@@ -288,7 +288,7 @@ class Bot {
       console.log(
         `Descargando ${parsedUrl.href}${
           parsedUrl.href === realUrl ? "" : ` -> ${realUrl}`
-        }`
+        }`,
       );
 
       this.bot.sendChatAction(chatId, "typing");
@@ -319,7 +319,7 @@ class Bot {
                     ],
                   ],
                 },
-              }
+              },
             );
             continue;
           }
@@ -345,7 +345,7 @@ class Bot {
         await this.bot.sendMessage(
           chatId,
           `Hubo un error al descargar ${parsedUrl.href}.`,
-          { reply_to_message_id: msg.message_id }
+          { reply_to_message_id: msg.message_id },
         );
         hasDownloadables = true;
       } else if (
@@ -362,13 +362,14 @@ class Bot {
         this.bot.sendChatAction(chatId, "upload_photo");
         if (cobaltResult.audio) {
           const audioStream = await Effect.runPromise(
-            dumpStreamFromUrl(cobaltResult.audio)
+            dumpStreamFromUrl(cobaltResult.audio),
           );
           await this.bot.sendAudio(chatId, audioStream, {
             reply_to_message_id: msg.message_id,
           });
         }
-        const description = await getDescription(parsedUrl.href);
+        const descriptionResult = await getDescription(parsedUrl.href);
+        const description = descriptionResult.description;
         const processMediaItems = Effect.gen(function* () {
           const effects = cobaltResult.picker.map((item) =>
             Effect.gen(function* () {
@@ -386,7 +387,7 @@ class Bot {
                   media: media as any,
                 } as TelegramBot.InputMedia;
               throw new Error(`Unsupported media type: ${item.type}`);
-            })
+            }),
           );
           return yield* Effect.all(effects, { concurrency: 4 });
         });
@@ -407,6 +408,17 @@ class Bot {
             });
           }
         }
+        // Show AI description only for specific chat
+        if (chatId === -1002148014236 && descriptionResult.aiDescription) {
+          await this.bot.sendMessage(
+            chatId,
+            `ℹ️ Descripción IA:\n<blockquote>${descriptionResult.aiDescription}</blockquote>`,
+            {
+              reply_to_message_id: msg.message_id,
+              parse_mode: "HTML",
+            },
+          );
+        }
         // Use Effect.forEach for controlled concurrency and better error handling
         const bot = this.bot;
         const sendMediaGroupsEffect = Effect.gen(function* () {
@@ -422,7 +434,7 @@ class Bot {
                   }),
                 catch: () => new MediaSendError({ chatId }),
               }),
-            { concurrency: 2 } // Controlled concurrency
+            { concurrency: 2 }, // Controlled concurrency
           );
         });
 
@@ -435,7 +447,7 @@ class Bot {
       await this.bot.sendMessage(
         chatId,
         "No encontré URLs descargables en ese mensaje.",
-        { reply_to_message_id: msg.message_id }
+        { reply_to_message_id: msg.message_id },
       );
     }
   }
@@ -443,7 +455,7 @@ class Bot {
   async handleTwitterFullContent(
     query: TelegramBot.CallbackQuery,
     screenName: string,
-    tweetId: string
+    tweetId: string,
   ): Promise<void> {
     if (!query.message) return;
 
@@ -456,7 +468,7 @@ class Bot {
       // Remove the inline keyboard to prevent double-clicking
       await this.bot.editMessageReplyMarkup(
         { inline_keyboard: [] },
-        { chat_id: chatId, message_id: query.message.message_id }
+        { chat_id: chatId, message_id: query.message.message_id },
       );
 
       // Fetch the full tweet content
@@ -475,7 +487,7 @@ class Bot {
         {
           reply_to_message_id: query.message.message_id,
           parse_mode: "HTML",
-        }
+        },
       );
 
       // Send media if available
@@ -489,7 +501,7 @@ class Bot {
           })) ?? [],
           {
             reply_to_message_id: query.message.message_id,
-          }
+          },
         );
       }
     } catch (error) {
@@ -508,7 +520,7 @@ class Bot {
     options: {
       replyToMessageId?: number;
       alreadyLowQuality?: boolean;
-    }
+    },
   ): Promise<void> {
     const downloadUrl = cobaltResult.url;
 
@@ -517,7 +529,7 @@ class Bot {
       cobaltResult.filename.endsWith(".png") ||
       cobaltResult.filename.endsWith(".gif");
 
-    const [sniffedRes, description, res] = await Promise.all([
+    const [sniffedRes, descriptionResult, res] = await Promise.all([
       sniff(downloadUrl),
       getDescription(url),
       fetch(downloadUrl, {
@@ -529,7 +541,10 @@ class Bot {
       throw new Error(`Failed to fetch media: ${res.status} ${res.statusText}`);
     try {
       // Split caption if too long
-      const captions = splitCaption(description ?? cobaltResult.filename, 1024);
+      const captions = splitCaption(
+        descriptionResult.description ?? cobaltResult.filename,
+        1024,
+      );
       // Send the first chunk as caption, the rest as follow-up messages
       await this.bot[isImage ? "sendPhoto" : "sendVideo"](
         chatId,
@@ -544,13 +559,24 @@ class Bot {
         {
           filename: cobaltResult.filename,
           contentType: res.headers.get("Content-Type") ?? "",
-        }
+        },
       );
       // Send any remaining caption chunks as follow-up messages
       for (let i = 1; i < captions.length; i++) {
         await this.bot.sendMessage(chatId, captions[i], {
           reply_to_message_id: options.replyToMessageId,
         });
+      }
+      // Show AI description only for specific chat
+      if (chatId === -1002148014236 && descriptionResult.aiDescription) {
+        await this.bot.sendMessage(
+          chatId,
+          `ℹ️ Descripción IA:\n<blockquote>${descriptionResult.aiDescription}</blockquote>`,
+          {
+            reply_to_message_id: options.replyToMessageId,
+            parse_mode: "HTML",
+          },
+        );
       }
     } catch (e) {
       if (!options.alreadyLowQuality) {

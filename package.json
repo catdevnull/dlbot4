@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "tsx .",
-    "dev": "bun run --watch index.ts"
+    "dev": "bun run --watch index.ts",
+    "format": "biome format --write"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

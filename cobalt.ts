@@ -41,7 +41,7 @@ export function getRealUrl(url: string): string | null {
         (domain) =>
           urlObj.hostname === domain ||
           urlObj.hostname === `www.${domain}` ||
-          urlObj.hostname.endsWith(`.${domain}`)
+          urlObj.hostname.endsWith(`.${domain}`),
       )
     )
       return null;
@@ -73,7 +73,7 @@ export const CobaltResult = z.discriminatedUnion("status", [
         type: z.enum(["photo", "video", "gif"]),
         url: z.string(),
         thumb: z.string().optional(),
-      })
+      }),
     ),
   }),
   z.object({
@@ -100,7 +100,7 @@ export async function askCobalt(
     videoQuality?: VideoQuality;
   },
   retryWithP?: number,
-  retryCount: number = 0
+  retryCount: number = 0,
 ) {
   const maxRetries = 3;
   const retryWith = retryWithP ?? 0;
@@ -132,7 +132,7 @@ export async function askCobalt(
         throw new Error(
           `Cobalt instance ${
             COBALT_INSTANCES[retryWith % COBALT_INSTANCES.length]
-          } threw an error: ${response.status} (${await response.text()})`
+          } threw an error: ${response.status} (${await response.text()})`,
         );
       }
 
@@ -157,10 +157,10 @@ export async function askCobalt(
           console.log(
             `TikTok download failed with ${errorCode}, retrying (attempt ${
               attempt + 2
-            }/${maxAttempts})`
+            }/${maxAttempts})`,
           );
           await new Promise((resolve) =>
-            setTimeout(resolve, 1000 * (attempt + 1))
+            setTimeout(resolve, 1000 * (attempt + 1)),
           ); // Exponential backoff
           continue;
         }
@@ -170,8 +170,8 @@ export async function askCobalt(
     } catch (error) {
       console.log(
         `Error while fetching ${cobaltUrl} with body ${JSON.stringify(
-          body
-        )} (attempt ${attempt + 1}/${maxAttempts})`
+          body,
+        )} (attempt ${attempt + 1}/${maxAttempts})`,
       );
 
       // If this is the last attempt for this instance, try next instance
@@ -181,7 +181,7 @@ export async function askCobalt(
       ) {
         console.warn(
           error,
-          `, retrying with ${COBALT_INSTANCES[retryWith + 1]}`
+          `, retrying with ${COBALT_INSTANCES[retryWith + 1]}`,
         );
         return askCobalt(url, options, retryWith + 1, 0);
       }
@@ -189,7 +189,7 @@ export async function askCobalt(
       // If we have more attempts left for this instance, continue
       if (attempt < maxAttempts - 1) {
         await new Promise((resolve) =>
-          setTimeout(resolve, 1000 * (attempt + 1))
+          setTimeout(resolve, 1000 * (attempt + 1)),
         ); // Exponential backoff
         continue;
       }
