@@ -6,7 +6,7 @@ export const COBALT_INSTANCES = (() => {
 
   const urls = entries.map((url) => url.trim()).filter((url) => url.length > 0);
   if (urls.length === 0) {
-    return ["https://cobalt-production-68d3.up.railway.app"];
+    return ["http://localhost:9000"];
   }
   return urls;
 })();

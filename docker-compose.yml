@@ -1,0 +1,15 @@
+# para desarrollo
+
+services:
+  cobalt:
+    image: ghcr.io/imputnet/cobalt:11
+    init: true
+    read_only: true
+    restart: unless-stopped
+    container_name: cobalt
+    ports:
+      - 9000:9000/tcp
+    environment:
+      API_URL: "http://localhost:9000"
+    volumes:
+      - ./cobalt-data:/data
