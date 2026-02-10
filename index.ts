@@ -14,6 +14,8 @@ import { Effect, Data, Schedule } from "effect";
 // https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#file-options-metadata
 process.env["NTBA_FIX_350"] = "false";
 
+const SHOULD_SHOW_AI_DESCRIPTION_CHAT_IDS = [-2140946778, -1002148014236];
+
 // ------------------------------
 // Effect Error Models
 // ------------------------------
@@ -409,7 +411,10 @@ class Bot {
 					}
 				}
 				// Show AI description only for specific chat
-				if (chatId === -1002148014236 && descriptionResult.aiDescription) {
+				if (
+					SHOULD_SHOW_AI_DESCRIPTION_CHAT_IDS.includes(chatId) &&
+					descriptionResult.aiDescription
+				) {
 					await this.bot.sendMessage(
 						chatId,
 						`ℹ️ Descripción IA:\n<blockquote>${descriptionResult.aiDescription}</blockquote>`,
@@ -568,7 +573,10 @@ class Bot {
 				});
 			}
 			// Show AI description only for specific chat
-			if (chatId === -1002148014236 && descriptionResult.aiDescription) {
+			if (
+				SHOULD_SHOW_AI_DESCRIPTION_CHAT_IDS.includes(chatId) &&
+				descriptionResult.aiDescription
+			) {
 				await this.bot.sendMessage(
 					chatId,
 					`ℹ️ Descripción IA:\n<blockquote>${descriptionResult.aiDescription}</blockquote>`,
