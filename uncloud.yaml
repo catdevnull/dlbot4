@@ -1,0 +1,33 @@
+# Uncloud deployment for dlbot plus its cobalt and local Telegram Bot API
+# sidecars. (docker-compose.yml is still the local dev setup.)
+#
+#   uc deploy -f uncloud.yaml
+#
+# Env files live in .uncloud/ (gitignored): dlbot.env (TELEGRAM_TOKEN,
+# PROXY_URL, COBALT_TIMEOUT), dlbot-cobalt.env (cobalt settings, e.g.
+# HTTPS_PROXY) and dlbot-telegram.env (TELEGRAM_API_ID, TELEGRAM_API_HASH,
+# TELEGRAM_LOCAL).
+
+services:
+  dlbot:
+    build:
+      context: .
+      platforms: [linux/amd64]
+    env_file: .uncloud/dlbot.env
+    environment:
+      TELEGRAM_API_URL: http://dlbot-telegram.internal:8081
+      COBALT_INSTANCES: http://dlbot-cobalt.internal:9000
+    depends_on:
+      - dlbot-telegram
+      - dlbot-cobalt
+
+  dlbot-cobalt:
+    image: ghcr.io/imputnet/cobalt:11
+    init: true
+    env_file: .uncloud/dlbot-cobalt.env
+    environment:
+      API_URL: http://dlbot-cobalt.internal:9000
+
+  dlbot-telegram:
+    image: aiogram/telegram-bot-api:latest
+    env_file: .uncloud/dlbot-telegram.env
